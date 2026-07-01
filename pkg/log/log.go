@@ -9,7 +9,7 @@ import (
 )
 
 var (
-    flagVerb = flag.Int("v", 0, "The `verbosity` level (0-10)")
+    flagVerb = flag.Int("v", 10, "The `verbosity` level (0-10)") // Set for debugging while developing
     mtx sync.Mutex
 )
 

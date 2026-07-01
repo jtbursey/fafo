@@ -2,3 +2,10 @@
 
 package corpus
 
+type Corpus struct {
+
+}
+
+type CorpusEntry struct {
+	
+}

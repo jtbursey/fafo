@@ -4,15 +4,12 @@ package main
 
 import (
     "flag"
-
     "time"
 
-    "fafo/pkg/worker"
+    "fafo/pkg/env"
+    "fafo/pkg/job"
     "fafo/pkg/log"
-)
-
-const (
-    numWorkers uint = 1
+    "fafo/pkg/worker"
 )
 
 // Define the command line args here
@@ -42,9 +39,13 @@ func Greeting() {
     log.Log(0, "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n\n\n")
 }
 
-func Loop() {
+func Loop(env env.Env) {
     for ;; {
-        time.Sleep(100 * time.Second)
+        time.Sleep(5 * time.Second)
+        select {
+        case newfact := <- env.FactCh:
+            log.Logf(0, "[Manager]: New fact: %v", newfact)
+        }
     }
 }
 
@@ -57,16 +58,39 @@ func main() {
         return
     }
 
+    // parse Config
+    // For now...
+    cfg := &env.Config{
+        NumWorkers: 1,
+    }
+
     Greeting()
 
+    jq := &job.JobQueue{}
+    jq.Init()
+    env := &env.Env{
+        Jobqueue: *jq,
+        Cfg:      *cfg,
+        CorpusCh: make(chan string, 10),
+        JobCh:    make(chan job.Job, 10),
+        FactCh:   make(chan string, 10),
+    }
+
     // Spawn the Worker Threads
-    for i := uint(0); i < numWorkers; i++ {
-        go worker.Run()
+    for i := uint(0); i < env.Cfg.NumWorkers; i++ {
+        go worker.Run(i, env)
     }
 
     // Create the first discovery job
+    firstJob := &job.Job{
+        Mode:     job.ModeDiscovery,
+        Priority: 5,
+        Target:   *flagURL,
+    }
+
+    env.Jobqueue.Push(firstJob)
 
     // Enter Loop
-    Loop()
+    Loop(*env)
 }
 
