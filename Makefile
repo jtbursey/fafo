@@ -1,0 +1,15 @@
+PROJECTNAME := fafo
+PREFIX := fafo-
+BINDIR := bin/
+
+.DEFAULT_GOAL := $(PROJECTNAME)
+
+.PHONY: all $(PROJECTNAME) clean
+
+all: $(PROJECTNAME)
+
+$(PROJECTNAME):
+	go build -o ./$(BINDIR)$(PROJECTNAME) $(PROJECTNAME)/$(PROJECTNAME)
+
+clean:
+	$(RM) -r $(BINDIR)
