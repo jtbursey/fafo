@@ -4,9 +4,11 @@ package main
 
 import (
     "flag"
-    "time"
+    //"time"
 
     "fafo/pkg/env"
+    "fafo/pkg/fact"
+    "fafo/pkg/httpclient"
     "fafo/pkg/job"
     "fafo/pkg/log"
     "fafo/pkg/worker"
@@ -16,7 +18,7 @@ import (
 var (
     flagURL = flag.String("url", "", "The base `URL` (domain) to hit")
     flagEP = flag.String("ep", "", "The specific `Endpoint` to hit (overrides URL)")
-    flagPort = flag.Uint("p", 443, "The `Port` on which to scan")
+    flagPort = flag.Int("p", 443, "The `Port` on which to scan")
 )
 
 func Greeting() {
@@ -41,10 +43,9 @@ func Greeting() {
 
 func Loop(env env.Env) {
     for ;; {
-        time.Sleep(5 * time.Second)
         select {
-        case newfact := <- env.FactCh:
-            log.Logf(0, "[Manager]: New fact: %v", newfact)
+        case <- env.FactCh:
+            log.Log(0, "[Manager]: New fact")
         }
     }
 }
@@ -68,12 +69,18 @@ func main() {
 
     jq := &job.JobQueue{}
     jq.Init()
+
+    httpclient := &httpclient.HttpClient{
+
+    }
+
     env := &env.Env{
         Jobqueue: *jq,
         Cfg:      *cfg,
+        Client:   *httpclient,
         CorpusCh: make(chan string, 10),
         JobCh:    make(chan job.Job, 10),
-        FactCh:   make(chan string, 10),
+        FactCh:   make(chan fact.Fact, 10),
     }
 
     // Spawn the Worker Threads
@@ -81,16 +88,29 @@ func main() {
         go worker.Run(i, env)
     }
 
+    // Define the top-level target
+    firstTarget := &fact.Target{
+        Port: *flagPort,
+    }
+    firstTarget.Default()
+    if *flagEP != "" {
+        firstTarget.Url = *flagEP
+        firstTarget.Type = fact.TargetEp
+    } else {
+        firstTarget.Url = *flagURL
+        firstTarget.Type = fact.TargetDomain
+    }
+    env.PushTarget(*firstTarget)
+
     // Create the first discovery job
     firstJob := &job.Job{
         Mode:     job.ModeDiscovery,
         Priority: 5,
-        Target:   *flagURL,
+        Target:   firstTarget.Url,
     }
 
     env.Jobqueue.Push(firstJob)
 
-    // Enter Loop
     Loop(*env)
 }
 

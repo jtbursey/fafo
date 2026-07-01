@@ -7,14 +7,16 @@ import (
 	"sync"
 )
 
+type WorkerMode string
+
 const (
-	ModeDiscovery string = "discovery"
-	ModeFuzzy     string = "fuzzy"
-	ModeAttack    string = "attack"
+	ModeDiscovery WorkerMode = "discovery"
+	ModeFuzzy     WorkerMode = "fuzzy"
+	ModeAttack    WorkerMode = "attack"
 )
 
 type Job struct {
-	Mode     string
+	Mode     WorkerMode
 	Priority int
 	index    int
 	Target   string
@@ -46,4 +48,8 @@ func (jq *JobQueue) Pop() *Job {
 
 func (jq JobQueue) Len() int {
 	return jq.queue.Len()
+}
+
+func (jq JobQueue) Poll() bool {
+	return jq.Len() > 0
 }
