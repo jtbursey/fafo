@@ -6,6 +6,8 @@ import (
     "flag"
     "fmt"
     "sync"
+
+    "fafo/pkg/pretty"
 )
 
 var (
@@ -13,12 +15,15 @@ var (
     mtx sync.Mutex
 )
 
+// Verbosity:
+// 0: Print only positive responses
+// 1: Print Findings
+// 2: Print negative responses
+// 3: Print worker transitions (and labels)
+// 4: Print http Client
+
 func Verb(v int) bool {
     return v <= *flagVerb
-}
-
-func Log(v int, msg string) {
-    Logf(v, "%v", msg)
 }
 
 func Logf(v int, msg string, args ...any) {
@@ -29,4 +34,16 @@ func Logf(v int, msg string, args ...any) {
     mtx.Lock()
     defer mtx.Unlock()
     fmt.Printf(msg, args...)
+}
+
+func Log(v int, msg string) {
+    Logf(v, "%v", msg)
+}
+
+func Errf(msg string, args ...any) {
+    Logf(0, fmt.Sprintf("%v: %v", pretty.Orange("Error"), msg), args...)
+}
+
+func Err(msg string) {
+    Errf("%v", msg)
 }

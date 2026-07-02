@@ -10,21 +10,27 @@ import (
 type WorkerMode string
 
 const (
+	ModeNone      WorkerMode = "none"
 	ModeDiscovery WorkerMode = "discovery"
 	ModeFuzzy     WorkerMode = "fuzzy"
 	ModeAttack    WorkerMode = "attack"
 )
 
+type Action string
+
 type Job struct {
 	Mode     WorkerMode
+	Action   Action
 	Priority int
 	index    int
 	Target   string
 }
 
 type JobQueue struct {
-	queue PriorityQueue
-	mtx   sync.Mutex
+	queue    PriorityQueue
+	mtx      sync.Mutex
+	waiting  int
+	inflight int
 }
 
 func (jq *JobQueue) Init() {
@@ -32,6 +38,8 @@ func (jq *JobQueue) Init() {
 	defer jq.mtx.Unlock()
 	jq.queue = make(PriorityQueue, 0)
 	heap.Init(&jq.queue)
+	jq.waiting = 0
+	jq.inflight = 0
 }
 
 func (jq *JobQueue) Push(job *Job) {

@@ -1,0 +1,43 @@
+// Joseph Bursey <jbursey@tevora.com>
+
+package pretty
+
+import (
+	"fmt"
+	"net/http"
+)
+
+func Red(str string) string {
+	return fmt.Sprintf("\033[31m%v\033[0m", str)
+}
+
+func Orange(str string) string {
+	return fmt.Sprintf("\033[38;2;255;165;0m%v\033[0m", str)
+}
+
+func Yellow(str string) string {
+	return fmt.Sprintf("\033[33m%v\033[0m", str)
+}
+
+func Green(str string) string {
+	return fmt.Sprintf("\033[32m%v\033[0m", str)
+}
+
+func Blue(str string) string {
+	return fmt.Sprintf("\033[34m%v\033[0m", str)
+}
+
+func ColorCode(code int) string {
+	scode := fmt.Sprintf("%v", code)
+	switch {
+	case code == 200:
+		return Green(scode)
+	case code == 404:
+		return Red(scode)
+	}
+	return Yellow(scode)
+}
+
+func Response(resp *http.Response, url string) string {
+	return fmt.Sprintf("%-50v [Status: %v]", url, ColorCode(resp.StatusCode))
+}

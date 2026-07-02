@@ -3,10 +3,13 @@
 package worker
 
 import (
+	"fmt"
+
 	"fafo/pkg/env"
-	//"fafo/pkg/fact"
-	//"fafo/pkg/job"
+	"fafo/pkg/fact"
+	"fafo/pkg/job"
 	"fafo/pkg/log"
+	"fafo/pkg/pretty"
 )
 
 type WorkerStatus string
@@ -20,23 +23,44 @@ const (
 type Worker struct {
 	id     uint
 	status WorkerStatus
+	mode   job.WorkerMode
 }
 
-func (w Worker) Log(v int, msg string) {
+func (w *Worker) Logf(v int, msg string, args ...any) {
+	if log.Verb(v) {
+		log.Logf(3, "%-13v", fmt.Sprintf("[Worker %v]: ", w.id))
+		log.Logf(v, msg, args...)
+	}
+}
+
+func (w *Worker) Log(v int, msg string) {
 	w.Logf(v, "%v", msg)
 }
 
-func (w Worker) Logf(v int, msg string, args ...any) {
-	log.Logf(v, "[Worker %v]: "+msg, append([]any{w.id}, args...)...)
+func (w *Worker) Errf(msg string, args ...any) {
+	log.Logf(0, "%-13v %v: %v", fmt.Sprintf("[Worker %v]:", w.id), pretty.Orange("Error"), msg)
 }
 
 func (w *Worker) newStatus(status WorkerStatus) {
 	w.status = status
-	w.Logf(1, "New status: %v\n", w.status)
+	w.Logf(3, "New status: %v\n", w.status)
 }
 
-func (w *Worker) Dispatch() {
+func (w *Worker) newMode(mode job.WorkerMode) {
+	w.mode = mode
+	w.Logf(3, "Switching to %v mode\n", w.mode)
+}
 
+func (w *Worker) resetMode() {
+	w.mode = job.ModeNone
+}
+
+func (w *Worker) dispatch(j *job.Job, t *fact.Target, e *env.Env) {
+	w.newMode(j.Mode)
+	if j.Mode == job.ModeDiscovery {
+		w.discoveryDispatch(j, t, e)
+	}
+	w.resetMode()
 }
 
 func (w *Worker) Loop(id uint, env *env.Env) {
@@ -44,23 +68,20 @@ func (w *Worker) Loop(id uint, env *env.Env) {
 		if env.Jobqueue.Poll() {
 			w.newStatus(StatusWorking)
 			curJob := env.Jobqueue.Pop()
-			w.Logf(1, "Switching to %v mode for %v\n", curJob.Mode, curJob.Target)
 			
 			// Pull the corpus
 
-			target := env.PullTarget(curJob.Target)
+			target := env.Targets.Pull(curJob.Target)
 			if target == nil {
-				w.Logf(0, "Error pulling target: %v. Target does not exist.\n", curJob.Target)
+				w.Errf("Failed to pull target: %v. Target does not exist.\n", curJob.Target)
 				w.newStatus(StatusIdle)
 				continue
 			}
-			
-			// Carry out the job
-			w.CheckAlive(target, *env)
+
+			w.dispatch(curJob, target, env)
 
 			// Push new jobs
 			// push corpus sync
-			env.PushTarget(*target)
 			w.newStatus(StatusIdle)
 		}
 	}

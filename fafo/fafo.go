@@ -4,7 +4,7 @@ package main
 
 import (
     "flag"
-    //"time"
+    "fmt"
 
     "fafo/pkg/env"
     "fafo/pkg/fact"
@@ -41,11 +41,16 @@ func Greeting() {
     log.Log(0, "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n\n\n")
 }
 
-func Loop(env env.Env) {
+func Loop(env *env.Env) {
+    prefix := ""
+    if log.Verb(3) {
+        prefix = fmt.Sprintf("%-13v", "[Manager]:")
+    }
     for ;; {
         select {
-        case <- env.FactCh:
-            log.Log(0, "[Manager]: New fact")
+        case f := <- env.FactCh:
+            f.PrintNovel(1, prefix)
+            env.Targets.PushFact(f)
         }
     }
 }
@@ -54,16 +59,16 @@ func main() {
     flag.Parse()
     
     if *flagURL == "" && *flagEP == "" {
-        log.Log(0, "No target was given! Please use either -url or -ep\n")
+        log.Err("No target was given! Please use either -url or -ep\n")
         flag.PrintDefaults()
         return
     }
 
     // parse Config
     // For now...
-    cfg := &env.Config{
-        NumWorkers: 1,
-    }
+    cfg := env.DefaultConfig()
+    cfg.NumWorkers = 1
+    cfg.Seclists = "/Users/jbursey/Documents/SecLists/"
 
     Greeting()
 
@@ -78,7 +83,7 @@ func main() {
         Jobqueue: *jq,
         Cfg:      *cfg,
         Client:   *httpclient,
-        CorpusCh: make(chan string, 10),
+        //CorpusCh: make(chan string, 10),
         JobCh:    make(chan job.Job, 10),
         FactCh:   make(chan fact.Fact, 10),
     }
@@ -90,7 +95,7 @@ func main() {
 
     // Define the top-level target
     firstTarget := &fact.Target{
-        Port: *flagPort,
+        Port:   *flagPort,
     }
     firstTarget.Default()
     if *flagEP != "" {
@@ -100,17 +105,18 @@ func main() {
         firstTarget.Url = *flagURL
         firstTarget.Type = fact.TargetDomain
     }
-    env.PushTarget(*firstTarget)
+    env.Targets.Push(*firstTarget)
 
     // Create the first discovery job
     firstJob := &job.Job{
         Mode:     job.ModeDiscovery,
+        Action:   worker.ActionCheckAlive,
         Priority: 5,
-        Target:   firstTarget.Url,
+        Target:   firstTarget.Key(),
     }
 
     env.Jobqueue.Push(firstJob)
 
-    Loop(*env)
+    Loop(env)
 }
 
