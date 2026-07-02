@@ -53,7 +53,7 @@ func Loop(env *env.Env) {
             env.Targets.PushFact(f)
         }
 
-        if env.Jobqueue.Done() {
+        if env.Jobqueue.Done() && len(env.FactCh) == 0 && len(env.JobCh) == 0 {
             log.Logf(0, "%vAll jobs completed.\n", prefix)
             break
         }
@@ -73,6 +73,7 @@ func main() {
     // For now...
     cfg := env.DefaultConfig()
     cfg.NumWorkers = 1
+    cfg.NumHttpCalls = 5
     cfg.Seclists = "/Users/jbursey/Documents/SecLists/"
 
     Greeting()
@@ -80,9 +81,7 @@ func main() {
     jq := &job.JobQueue{}
     jq.Init()
 
-    httpclient := &httpclient.HttpClient{
-
-    }
+    httpclient := httpclient.New(cfg.NumHttpCalls)
 
     env := &env.Env{
         Jobqueue: *jq,

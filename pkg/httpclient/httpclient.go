@@ -7,11 +7,12 @@ import (
 
 	"fafo/pkg/log"
 	"fafo/pkg/pretty"
+	"fafo/pkg/semaphore"
 )
 
 type HttpClient struct {
 	client http.Client
-	// Semaphores and such
+	sem    semaphore.Semaphore
 }
 
 func (c HttpClient) Logf(v int, msg string, args ...any) {
@@ -29,11 +30,18 @@ func (c HttpClient) Errf(msg string, args ...any) {
 	log.Logf(0, "%-13v %v: %v", append([]any{"[Client]:", pretty.Orange("Error"), msg}, args...))
 }
 
+func New(maxCalls int) *HttpClient{
+	return &HttpClient{
+		sem: *semaphore.New(maxCalls),
+	}
+}
+
 func (c *HttpClient) Get(url string) *http.Response {
-	// Do things with semaphore
+	c.sem.Acquire()
 	c.Logf(4, "Getting %v\n", url)
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
 	resp, err := c.client.Do(req)
+	c.sem.Release()
 	if err != nil {
 		c.Errf("GET request to %v failed.\n", url)
 		return nil
