@@ -5,6 +5,8 @@ package job
 import (
 	"container/heap"
 	"sync"
+
+	"fafo/pkg/log"
 )
 
 type WorkerMode string
@@ -29,7 +31,6 @@ type Job struct {
 type JobQueue struct {
 	queue    PriorityQueue
 	mtx      sync.Mutex
-	waiting  int
 	inflight int
 }
 
@@ -38,7 +39,6 @@ func (jq *JobQueue) Init() {
 	defer jq.mtx.Unlock()
 	jq.queue = make(PriorityQueue, 0)
 	heap.Init(&jq.queue)
-	jq.waiting = 0
 	jq.inflight = 0
 }
 
@@ -51,13 +51,30 @@ func (jq *JobQueue) Push(job *Job) {
 func (jq *JobQueue) Pop() *Job {
 	jq.mtx.Lock()
 	defer jq.mtx.Unlock()
+	jq.inflight++
 	return jq.queue.Pop().(*Job)
 }
 
-func (jq JobQueue) Len() int {
+func (jq *JobQueue) Finish() {
+	jq.mtx.Lock()
+	defer jq.mtx.Unlock()
+	if jq.inflight == 0 {
+		log.Err("Inflight counter decrimented when no jobs were in flight!\n")
+		return
+	}
+	jq.inflight--
+}
+
+func (jq *JobQueue) Len() int {
 	return jq.queue.Len()
 }
 
-func (jq JobQueue) Poll() bool {
+func (jq *JobQueue) Poll() bool {
 	return jq.Len() > 0
+}
+
+func (jq *JobQueue) Done() bool {
+	jq.mtx.Lock()
+	defer jq.mtx.Unlock()
+	return jq.Len() == 0 && jq.inflight == 0
 }

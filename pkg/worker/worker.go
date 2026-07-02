@@ -75,6 +75,7 @@ func (w *Worker) Loop(id uint, env *env.Env) {
 			if target == nil {
 				w.Errf("Failed to pull target: %v. Target does not exist.\n", curJob.Target)
 				w.newStatus(StatusIdle)
+				env.Jobqueue.Finish()
 				continue
 			}
 
@@ -82,7 +83,9 @@ func (w *Worker) Loop(id uint, env *env.Env) {
 
 			// Push new jobs
 			// push corpus sync
+			
 			w.newStatus(StatusIdle)
+			env.Jobqueue.Finish()
 		}
 	}
 }

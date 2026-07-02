@@ -52,6 +52,11 @@ func Loop(env *env.Env) {
             f.PrintNovel(1, prefix)
             env.Targets.PushFact(f)
         }
+
+        if env.Jobqueue.Done() {
+            log.Logf(0, "%vAll jobs completed.\n", prefix)
+            break
+        }
     }
 }
 
