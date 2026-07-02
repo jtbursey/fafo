@@ -16,6 +16,8 @@ func (w *Worker) CheckAlive(target *fact.Target, env env.Env) {
 	if resp == nil {
 		w.Logf(0, "Error getting target: %v\n", target.Url)
 	}
+
+	w.Logf(0, "Received valid response (%v) from %v\n ", resp.StatusCode, target.Url)
 	target.IsAlive = 1
 }
 
