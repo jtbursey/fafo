@@ -1,4 +1,4 @@
-# Fuzz Arouund, Find Out
+# Fuzz Around, Find Out
 
 ## Build
 ```
