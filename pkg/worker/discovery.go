@@ -38,7 +38,7 @@ func (w *Worker) CheckAlive(target *fact.Target, env *env.Env) {
 	if resp == nil {
 		w.Errf("Failed to GET target: %v\n", target.Url)
 		res.Novel[fact.IsAlive] = fact.FactFalse
-		env.FactCh <- res
+		//env.FactCh <- res // Don't send the fact to keep down on memory
 		return
 	}
 
@@ -67,6 +67,10 @@ func (w *Worker) CheckAlive(target *fact.Target, env *env.Env) {
 
 // Match target to known fingerprints
 func (w *Worker) FingerPrint() {
+
+}
+
+func (w *Worker) FuzzCommonPorts() {
 
 }
 
