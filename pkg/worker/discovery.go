@@ -52,7 +52,6 @@ func (w *Worker) CheckAlive(target *fact.Target, env *env.Env) {
 		res.Novel[fact.IsAlive] = fact.FactTrue
 		res.Novel[fact.Exists] = fact.FactTrue
 		env.FactCh <- res
-		
 
 		if target.Type == fact.TargetDomain || target.Type == fact.TargetPath {
 			env.JobCh <- job.Job{

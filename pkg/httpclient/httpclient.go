@@ -17,11 +17,13 @@ type HttpCfg struct {
 	MaxCalls int
 	Redirect func(req *http.Request, via []*http.Request) error
 	Timeout  time.Duration
+	Slowdown time.Duration // Time in between consecutive calls (allowing for MaxCalls simultaneous calls)
 }
 
 type HttpClient struct {
-	client http.Client
-	sem    semaphore.Semaphore
+	client      http.Client
+	sem         semaphore.Semaphore
+	slowdown    time.Duration
 }
 
 func (c HttpClient) Logf(v int, msg string, args ...any) {
@@ -44,18 +46,25 @@ func DefaultConfig() *HttpCfg {
 		MaxCalls:  5,
 		Redirect:  func(req *http.Request, via []*http.Request) error { return http.ErrUseLastResponse },
 		Timeout:   time.Second,
+		Slowdown:  250*time.Millisecond,
 	}
 }
 
 func New(cfg HttpCfg) *HttpClient {
-
 	return &HttpClient{
-		client: http.Client{
+		client:   http.Client{
 			CheckRedirect: cfg.Redirect,
 			Timeout:       cfg.Timeout,
 		},
-		sem:    *semaphore.New(cfg.MaxCalls),
+		sem:      *semaphore.New(cfg.MaxCalls),
+		slowdown: cfg.Slowdown,
 	}
+}
+
+// Wait for slowdown time until we let another thread in here again
+func (c *HttpClient) doSlowdown() {
+	time.Sleep(c.slowdown)
+	c.sem.Release()
 }
 
 func (c *HttpClient) Get(url string) *http.Response {
@@ -63,7 +72,7 @@ func (c *HttpClient) Get(url string) *http.Response {
 	c.Logf(7, "Getting %v\n", url)
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
 	resp, err := c.client.Do(req)
-	c.sem.Release()
+	go c.doSlowdown()
 	if err != nil {
 		c.Errf("GET request to %v failed: %v\n", url, err)
 		return nil
