@@ -4,7 +4,10 @@ package fact
 
 import (
 	"fmt"
+	"strings"
 	"sync"
+
+	"fafo/pkg/log"
 )
 
 type TargetType string
@@ -19,8 +22,7 @@ type Target struct {
 	Url     string
 	Type    TargetType
 	Port    int
-	IsAlive int
-	Exists  int
+	Facts   map[FactKey]FactValue			// The information we have learned
 }
 
 type TargetMap struct {
@@ -28,32 +30,8 @@ type TargetMap struct {
 	mtx sync.Mutex
 }
 
-func (tgt *Target) Default() {
-	tgt.IsAlive = -1
-	tgt.Exists = -1
-}
-
 func (tgt *Target) Key() string {
 	return fmt.Sprintf("%v:%v", tgt.Url, tgt.Port)
-}
-
-func FromFact(f Fact) Target {
-	tgt := Target{
-		Url:  f.Url,
-		Port: f.Port,
-	}
-
-	tgt.Default()
-	for key, value := range f.Novel {
-		switch {
-		case key == IsAlive:
-			tgt.IsAlive = FactBool(value)
-		case key == Exists:
-			tgt.Exists = FactBool(value)
-		}
-	}
-
-	return tgt
 }
 
 func (tm *TargetMap) Pull(key string) *Target {
@@ -73,11 +51,21 @@ func (tm *TargetMap) Pull(key string) *Target {
 func (tm *TargetMap) mergeTarget(new Target) {
 	old := tm.tm[new.Key()]
 
-	if new.IsAlive >= 0 && old.IsAlive <= 0 {
-		old.IsAlive = new.IsAlive
-	}
-	if new.Exists >= 0 {
-		old.Exists = new.Exists
+	for key, value := range new.Facts {
+		if _, ok := old.Facts[key]; !ok {
+			old.Facts[key] = value
+		}
+
+		switch {
+		case key == IsAlive:
+			if old.Facts[key] == True && value == False {
+				old.Facts[HasDied] = True
+			} else if value == True {
+				old.Facts[key] = True
+			}
+		default:
+			old.Facts[key] = value
+		}
 	}
 }
 
@@ -96,6 +84,26 @@ func (tm *TargetMap) Push(target Target) {
 	}
 }
 
-func (tm *TargetMap) PushFact(fact Fact) {
-	tm.Push(FromFact(fact))
+func (tm *TargetMap) PrintFindings() {
+	log.Log(0, "\nFindings:\n")
+	for _, tgt := range tm.tm {
+		log.Logf(0, "Target: %v\n", tgt.Url)
+		for key, value := range tgt.Facts {
+			log.Logf(0, "    [%v: %v]\n", key, value)
+		}
+	}
+}
+
+func (tgt *Target) PrintFacts(v int, prefix string) {
+	for key, value := range tgt.Facts {
+		log.Logf(v, "%v%-50v [%v: %v]\n", prefix, tgt.Url, key, value)
+	}
+}
+
+func UrlAppend(url string, newBit string) string {
+	sep := ""
+	if len(url) > 0 && !strings.HasSuffix(url, "/") {
+		sep = "/"
+	}
+	return fmt.Sprintf("%v%v%v", url, sep, newBit)
 }

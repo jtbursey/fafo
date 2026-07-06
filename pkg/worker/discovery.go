@@ -5,11 +5,8 @@
 package worker
 
 import (
-	//"bufio"
-	"fmt"
-	"os"
 	"slices"
-	"strings"
+	"sync"
 
 	"fafo/pkg/env"
 	"fafo/pkg/fact"
@@ -33,15 +30,16 @@ var (
 func (w *Worker) CheckAlive(target *fact.Target, env *env.Env) {
 	resp := env.Client.Get(target.Url)
 
-	res := fact.Fact{
+	res := fact.Target{
 		Url:   target.Url,
+		Type:  target.Type,
 		Port:  target.Port,
-		Novel: make(map[fact.FactKey]fact.FactValue),
+		Facts: make(map[fact.FactKey]fact.FactValue),
 	}
 
 	if resp == nil {
 		w.Errf("Failed to GET target: %v\n", target.Url)
-		res.Novel[fact.IsAlive] = fact.FactFalse
+		res.Facts[fact.IsAlive] = fact.False
 		//env.FactCh <- res // Don't send the fact to keep down on memory
 		return
 	}
@@ -49,8 +47,8 @@ func (w *Worker) CheckAlive(target *fact.Target, env *env.Env) {
 
 	if slices.Contains(aliveValid, resp.StatusCode) {
 		w.Logf(0, "%v\n", pretty.Response(resp, target.Url))
-		res.Novel[fact.IsAlive] = fact.FactTrue
-		res.Novel[fact.Exists] = fact.FactTrue
+		res.Facts[fact.IsAlive] = fact.True
+		res.Facts[fact.Exists] = fact.True
 		env.FactCh <- res
 
 		if target.Type == fact.TargetDomain || target.Type == fact.TargetPath {
@@ -74,8 +72,8 @@ func (w *Worker) CheckAlive(target *fact.Target, env *env.Env) {
 
 	} else {
 		w.Logf(2, "%v\n", pretty.Response(resp, target.Url))
-		res.Novel[fact.IsAlive] = fact.FactTrue
-		res.Novel[fact.Exists] = fact.FactFalse
+		res.Facts[fact.IsAlive] = fact.True
+		res.Facts[fact.Exists] = fact.False
 		env.FactCh <- res
 	}
 }
@@ -90,33 +88,45 @@ func (w *Worker) FuzzCommonPorts() {
 }
 
 func (w *Worker) fuzzFromList(target *fact.Target, env *env.Env, listFile string) {
-	w.Logf(10, "Fuzzing with list from %v\n", listFile)
-	file, err := os.Open(listFile)
-	if err != nil {
-		w.Errf("Failed to open file %v: %v.", listFile, err)
-		return
+	w.Logf(10, "Fuzzing %v with %v\n", target.Url, listFile)
+	
+	// Take hint from MaxCalls and spawn that many workers.
+	var wg sync.WaitGroup
+	ch := make(chan string, env.Cfg.ClientCfg.MaxCalls*2)
+	done := false
+	wg.Go(func() {w.channelFile(listFile, ch, &done)})
+	for i := 0; i < env.Cfg.ClientCfg.MaxCalls; i++ {
+		wg.Go(func() {
+			for {
+				select {
+				case item := <- ch:
+					newTarget := &fact.Target{
+						Url:   fact.UrlAppend(target.Url, item),
+						Type:  fact.TargetPath,
+						Port:  target.Port,
+						Facts: make(map[fact.FactKey]fact.FactValue),
+					}
+
+					newTarget.Facts[fact.IsAlive] = fact.True
+				default:
+					if done { return }
+				}
+			}
+		})
 	}
 
-	file.Close()
+	wg.Wait()
 }
 
 // Path fuzzing
 func (w *Worker) FuzzDirectories(target *fact.Target, env *env.Env) {
-	sep := ""
-	if len(env.Cfg.Seclists) > 0 && !strings.HasSuffix(env.Cfg.Seclists, "/") {
-		sep = "/"
-	}
-	listFile := fmt.Sprintf("%v%v%v", env.Cfg.Seclists, sep, env.Cfg.FuzzDirList)
+	listFile := fact.UrlAppend(env.Cfg.Seclists, env.Cfg.FuzzDirList)
 
 	w.fuzzFromList(target, env, listFile)
 }
 
 func (w *Worker) FuzzFiles(target *fact.Target, env *env.Env) {
-	sep := ""
-	if len(env.Cfg.Seclists) > 0 && !strings.HasSuffix(env.Cfg.Seclists, "/") {
-		sep = "/"
-	}
-	listFile := fmt.Sprintf("%v%v%v", env.Cfg.Seclists, sep, env.Cfg.FuzzFileList)
+	listFile := fact.UrlAppend(env.Cfg.Seclists, env.Cfg.FuzzFileList)
 
 	w.fuzzFromList(target, env, listFile)
 }

@@ -5,6 +5,7 @@ package main
 import (
     "flag"
     "fmt"
+    "time"
 
     "fafo/pkg/env"
     "fafo/pkg/fact"
@@ -44,13 +45,13 @@ func Greeting() {
 func Loop(env *env.Env) {
     prefix := ""
     if log.Verb(3) {
-        prefix = fmt.Sprintf("%-13v", "[Manager]:")
+        prefix = fmt.Sprintf("%-13v", "[Manager]: ")
     }
     for ;; {
         select {
-        case f := <- env.FactCh:
-            f.PrintNovel(1, prefix)
-            env.Targets.PushFact(f)
+        case t := <- env.FactCh:
+            t.PrintFacts(1, prefix)
+            env.Targets.Push(t)
         case j := <- env.JobCh:
             env.Jobqueue.Push(&j)
         default:
@@ -75,6 +76,7 @@ func main() {
     // For now...
     cfg := env.DefaultConfig()
     cfg.NumWorkers = 1
+    cfg.ClientCfg.Slowdown = 5*time.Second
     cfg.Seclists = "/Users/jbursey/Documents/SecLists/"
 
     Greeting()
@@ -90,7 +92,7 @@ func main() {
         Client:   *httpclient,
         //CorpusCh: make(chan string, 10),
         JobCh:    make(chan job.Job, 10),
-        FactCh:   make(chan fact.Fact, 10),
+        FactCh:   make(chan fact.Target, 10),
     }
 
     // Spawn the Worker Threads
@@ -100,9 +102,9 @@ func main() {
 
     // Define the top-level target
     firstTarget := &fact.Target{
-        Port:   *flagPort,
+        Port:  *flagPort,
+        Facts: make(map[fact.FactKey]fact.FactValue),
     }
-    firstTarget.Default()
     if *flagEP != "" {
         firstTarget.Url = *flagEP
         firstTarget.Type = fact.TargetEp
@@ -124,5 +126,8 @@ func main() {
 
     // TODO: Print debug information
     Loop(env)
+
+    // TODO: Print Findings
+    env.Targets.PrintFindings()
 }
 

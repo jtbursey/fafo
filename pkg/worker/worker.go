@@ -3,7 +3,9 @@
 package worker
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 
 	"fafo/pkg/env"
 	"fafo/pkg/fact"
@@ -82,7 +84,6 @@ func (w *Worker) Loop(id uint, env *env.Env) {
 
 			w.dispatch(curJob, target, env)
 
-			// Push new jobs
 			// push corpus sync
 			
 			w.newStatus(StatusIdle)
@@ -99,4 +100,22 @@ func Run(i uint, env *env.Env) {
 
 	w.newStatus(StatusIdle)
 	w.Loop(i, env)
+}
+
+// Begin other functions for the library
+
+func (w *Worker) channelFile(listFile string, ch chan string, done *bool) {
+	file, err := os.Open(listFile)
+	if err != nil {
+		w.Errf("Failed to open file %v: %v.", listFile, err)
+		*done = true
+		return
+	}
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		ch <- scanner.Text()
+	}
+	*done = true
+	file.Close()
 }

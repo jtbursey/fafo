@@ -15,5 +15,5 @@ type Env struct {
 	Client    httpclient.HttpClient
 	CorpusCh  chan string					// Channel for pushing corpus updates (to mgr)
 	JobCh     chan job.Job					// Channel for pushing more jobs (to mgr)
-	FactCh    chan fact.Fact				// Channel for pushing facts/results  (to mgr)
+	FactCh    chan fact.Target				// Channel for pushing facts/results  (to mgr)
 }
