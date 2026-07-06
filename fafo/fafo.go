@@ -90,7 +90,6 @@ func main() {
         Jobqueue: *jq,
         Cfg:      *cfg,
         Client:   *httpclient,
-        //CorpusCh: make(chan string, 10),
         JobCh:    make(chan job.Job, 10),
         FactCh:   make(chan fact.Target, 10),
     }

@@ -13,7 +13,6 @@ type Env struct {
 	Cfg       Config						// Extra Config (sommeday to be set by the user)
 	Targets   fact.TargetMap				// Keep information about known targets
 	Client    httpclient.HttpClient
-	CorpusCh  chan string					// Channel for pushing corpus updates (to mgr)
 	JobCh     chan job.Job					// Channel for pushing more jobs (to mgr)
 	FactCh    chan fact.Target				// Channel for pushing facts/results  (to mgr)
 }
