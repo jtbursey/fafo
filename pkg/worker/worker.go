@@ -38,7 +38,7 @@ func (w *Worker) Log(v int, msg string) {
 }
 
 func (w *Worker) Errf(msg string, args ...any) {
-	log.Logf(0, "%-13v %v: %v", fmt.Sprintf("[Worker %v]:", w.id), pretty.Orange("Error"), msg)
+	log.Logf(0, fmt.Sprintf("%-13v%v: %v", fmt.Sprintf("[Worker %v]: ", w.id), pretty.Orange("Error"), msg), args...)
 }
 
 func (w *Worker) newStatus(status WorkerStatus) {
@@ -73,7 +73,7 @@ func (w *Worker) Loop(id uint, env *env.Env) {
 
 			target := env.Targets.Pull(curJob.Target)
 			if target == nil {
-				w.Errf("Failed to pull target: %v. Target does not exist.\n", curJob.Target)
+				w.Errf("Failed to pull target: %v: Target does not exist.\n", curJob.Target)
 				w.newStatus(StatusIdle)
 				env.Jobqueue.Finish()
 				continue

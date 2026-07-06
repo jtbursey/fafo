@@ -3,6 +3,7 @@
 package httpclient
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -35,7 +36,7 @@ func (c HttpClient) Log(v int, msg string) {
 }
 
 func (c HttpClient) Errf(msg string, args ...any) {
-	log.Logf(0, "%-13v %v: %v", append([]any{"[Client]:", pretty.Orange("Error"), msg}, args...))
+	log.Logf(0, fmt.Sprintf("%-13v%v: %v", "[Client]: ", pretty.Orange("Error"), msg), args...)
 }
 
 func DefaultConfig() *HttpCfg {
@@ -64,7 +65,7 @@ func (c *HttpClient) Get(url string) *http.Response {
 	resp, err := c.client.Do(req)
 	c.sem.Release()
 	if err != nil {
-		c.Errf("GET request to %v failed.\n", url)
+		c.Errf("GET request to %v failed: %v\n", url, err)
 		return nil
 	}
 

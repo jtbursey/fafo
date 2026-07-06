@@ -89,7 +89,7 @@ func (w *Worker) fuzzFromList(target *fact.Target, env *env.Env, listFile string
 	w.Logf(10, "Fuzzing with list from %v\n", listFile)
 	file, err := os.Open(listFile)
 	if err != nil {
-		w.Errf("Failed to open file %v.", listFile)
+		w.Errf("Failed to open file %v: %v.", listFile, err)
 		return
 	}
 
