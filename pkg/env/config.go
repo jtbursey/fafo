@@ -2,11 +2,13 @@
 
 package env
 
-// TODO: Take config for individual seclists, Seclists location, etc.
+import(
+	"fafo/pkg/httpclient"
+)
 
 type Config struct {
 	NumWorkers    uint
-	NumHttpCalls  int
+	ClientCfg     httpclient.HttpCfg
 
 	FuzzRecursive bool
 
@@ -18,7 +20,7 @@ type Config struct {
 func DefaultConfig() *Config {
 	return &Config{
 		NumWorkers:    8,
-		NumHttpCalls:  5,
+		ClientCfg:     *httpclient.DefaultConfig(),
 		FuzzRecursive: true,
 		FuzzDirList:   "Discovery/Web-Content/raft-medium-directories-lowercase.txt",
 		FuzzFileList:  "Discovery/Web-Content/raft-medium-files.txt",

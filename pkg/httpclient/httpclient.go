@@ -4,11 +4,18 @@ package httpclient
 
 import (
 	"net/http"
+	"time"
 
 	"fafo/pkg/log"
 	"fafo/pkg/pretty"
 	"fafo/pkg/semaphore"
 )
+
+type HttpCfg struct {
+	MaxCalls int
+	Redirect func(req *http.Request, via []*http.Request) error
+	Timeout  time.Duration
+}
 
 type HttpClient struct {
 	client http.Client
@@ -30,9 +37,22 @@ func (c HttpClient) Errf(msg string, args ...any) {
 	log.Logf(0, "%-13v %v: %v", append([]any{"[Client]:", pretty.Orange("Error"), msg}, args...))
 }
 
-func New(maxCalls int) *HttpClient{
+func DefaultConfig() *HttpCfg {
+	return &HttpCfg{
+		MaxCalls:  5,
+		Redirect:  func(req *http.Request, via []*http.Request) error { return http.ErrUseLastResponse },
+		Timeout:   time.Second,
+	}
+}
+
+func New(cfg HttpCfg) *HttpClient {
+
 	return &HttpClient{
-		sem: *semaphore.New(maxCalls),
+		client: http.Client{
+			CheckRedirect: cfg.Redirect,
+			Timeout:       cfg.Timeout,
+		},
+		sem:    *semaphore.New(cfg.MaxCalls),
 	}
 }
 

@@ -75,7 +75,6 @@ func main() {
     // For now...
     cfg := env.DefaultConfig()
     cfg.NumWorkers = 1
-    cfg.NumHttpCalls = 5
     cfg.Seclists = "/Users/jbursey/Documents/SecLists/"
 
     Greeting()
@@ -83,7 +82,7 @@ func main() {
     jq := &job.JobQueue{}
     jq.Init()
 
-    httpclient := httpclient.New(cfg.NumHttpCalls)
+    httpclient := httpclient.New(cfg.ClientCfg)
 
     env := &env.Env{
         Jobqueue: *jq,
@@ -123,6 +122,7 @@ func main() {
 
     env.Jobqueue.Push(firstJob)
 
+    // TODO: Print debug information
     Loop(env)
 }
 
