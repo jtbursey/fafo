@@ -62,7 +62,12 @@ func (w *Worker) CheckAlive(target *fact.Target, env *env.Env) {
 				Target:   target.Key(),
 			}
 
-			// TODO: Push a fuzz files job
+			env.JobCh <- job.Job{
+				Mode:     job.ModeDiscovery,
+				Action:   ActionFuzzFiles,
+				Priority: 5,
+				Target:   target.Key(),
+			}
 		}
 
 		// TODO: Push a fuzzy job
@@ -107,8 +112,14 @@ func (w *Worker) FuzzDirectories(target *fact.Target, env *env.Env) {
 	w.fuzzFromList(target, env, listFile)
 }
 
-func (w *Worker) FuzzFiles() {
-	
+func (w *Worker) FuzzFiles(target *fact.Target, env *env.Env) {
+	sep := ""
+	if len(env.Cfg.Seclists) > 0 && !strings.HasSuffix(env.Cfg.Seclists, "/") {
+		sep = "/"
+	}
+	listFile := fmt.Sprintf("%v%v%v", env.Cfg.Seclists, sep, env.Cfg.FuzzFileList)
+
+	w.fuzzFromList(target, env, listFile)
 }
 
 // WP Scan
@@ -122,5 +133,7 @@ func (w *Worker) discoveryDispatch(j *job.Job, t *fact.Target, e *env.Env) {
 		w.CheckAlive(t, e)
 	case j.Action == ActionFuzzDirectories:
 		w.FuzzDirectories(t, e)
+	case j.Action == ActionFuzzFiles:
+		w.FuzzFiles(t, e)
 	}
 }
