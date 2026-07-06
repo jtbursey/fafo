@@ -27,10 +27,11 @@ type Worker struct {
 }
 
 func (w *Worker) Logf(v int, msg string, args ...any) {
-	if log.Verb(v) {
-		log.Logf(3, "%-13v", fmt.Sprintf("[Worker %v]: ", w.id))
-		log.Logf(v, msg, args...)
+	prefix := ""
+	if log.Verb(3) {
+		prefix = fmt.Sprintf("%-13v", fmt.Sprintf("[Worker %v]: ", w.id))
 	}
+	log.Logf(v, prefix+msg, args...)
 }
 
 func (w *Worker) Log(v int, msg string) {
