@@ -3,6 +3,7 @@
 package httpclient
 
 import (
+	"io"
 	"net/http"
 	"time"
 
@@ -69,4 +70,13 @@ func (c *HttpClient) Get(url string) *http.Response {
 
 	c.Logf(4, "Response: %v\n", resp.Status)
 	return resp
+}
+
+// Just read the body and close it out. Call if you don't care about the body.
+func (c *HttpClient) DropBody(resp *http.Response) {
+	_, err := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if err != nil {
+		c.Errf("Unexpected error in DropBody: %v\n", err)
+	}
 }

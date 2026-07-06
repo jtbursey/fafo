@@ -45,6 +45,7 @@ func (w *Worker) CheckAlive(target *fact.Target, env *env.Env) {
 		//env.FactCh <- res // Don't send the fact to keep down on memory
 		return
 	}
+	env.Client.DropBody(resp)
 
 	if slices.Contains(aliveValid, resp.StatusCode) {
 		w.Logf(0, "%v\n", pretty.Response(resp, target.Url))
