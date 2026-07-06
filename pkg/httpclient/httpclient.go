@@ -38,7 +38,7 @@ func New(maxCalls int) *HttpClient{
 
 func (c *HttpClient) Get(url string) *http.Response {
 	c.sem.Acquire()
-	c.Logf(4, "Getting %v\n", url)
+	c.Logf(7, "Getting %v\n", url)
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
 	resp, err := c.client.Do(req)
 	c.sem.Release()

@@ -5,7 +5,11 @@
 package worker
 
 import (
+	//"bufio"
+	"fmt"
+	"os"
 	"slices"
+	"strings"
 
 	"fafo/pkg/env"
 	"fafo/pkg/fact"
@@ -50,7 +54,13 @@ func (w *Worker) CheckAlive(target *fact.Target, env *env.Env) {
 		
 
 		if target.Type == fact.TargetDomain || target.Type == fact.TargetPath {
-			// TODO: Push a fuzz directories job
+			env.JobCh <- job.Job{
+				Mode:     job.ModeDiscovery,
+				Action:   ActionFuzzDirectories,
+				Priority: 5,
+				Target:   target.Key(),
+			}
+
 			// TODO: Push a fuzz files job
 		}
 
@@ -74,9 +84,26 @@ func (w *Worker) FuzzCommonPorts() {
 
 }
 
-// Path fuzzing
-func (w *Worker) FuzzDirectories() {
+func (w *Worker) fuzzFromList(target *fact.Target, env *env.Env, listFile string) {
+	w.Logf(10, "Fuzzing with list from %v\n", listFile)
+	file, err := os.Open(listFile)
+	if err != nil {
+		w.Errf("Failed to open file %v.", listFile)
+		return
+	}
 
+	file.Close()
+}
+
+// Path fuzzing
+func (w *Worker) FuzzDirectories(target *fact.Target, env *env.Env) {
+	sep := ""
+	if len(env.Cfg.Seclists) > 0 && !strings.HasSuffix(env.Cfg.Seclists, "/") {
+		sep = "/"
+	}
+	listFile := fmt.Sprintf("%v%v%v", env.Cfg.Seclists, sep, env.Cfg.FuzzDirList)
+
+	w.fuzzFromList(target, env, listFile)
 }
 
 func (w *Worker) FuzzFiles() {
@@ -89,7 +116,10 @@ func (w *Worker) WordPressScan() {
 }
 
 func (w *Worker) discoveryDispatch(j *job.Job, t *fact.Target, e *env.Env) {
-	if j.Action == ActionCheckAlive {
+	switch {
+	case j.Action == ActionCheckAlive:
 		w.CheckAlive(t, e)
+	case j.Action == ActionFuzzDirectories:
+		w.FuzzDirectories(t, e)
 	}
 }

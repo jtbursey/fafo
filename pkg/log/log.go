@@ -16,11 +16,17 @@ var (
 )
 
 // Verbosity:
-// 0: Print only positive responses
-// 1: Print Findings
-// 2: Print negative responses
-// 3: Print worker transitions (and labels)
-// 4: Print http Client
+// 0:  Print only positive responses
+// 1:  Print Findings
+// 2:  Print negative responses
+// 3:  Print worker transitions (and labels)
+// 4:  
+// 5:  
+// 6:  
+// 7:  Print http Client
+// 8:  
+// 9:  
+// 10: Print all debug information
 
 func Verb(v int) bool {
     return v <= *flagVerb

@@ -51,11 +51,13 @@ func Loop(env *env.Env) {
         case f := <- env.FactCh:
             f.PrintNovel(1, prefix)
             env.Targets.PushFact(f)
-        }
-
-        if env.Jobqueue.Done() && len(env.FactCh) == 0 && len(env.JobCh) == 0 {
-            log.Logf(0, "%vAll jobs completed.\n", prefix)
-            break
+        case j := <- env.JobCh:
+            env.Jobqueue.Push(&j)
+        default:
+            if env.Jobqueue.Done() && len(env.FactCh) == 0 && len(env.JobCh) == 0 {
+                log.Logf(0, "%vAll jobs completed.\n", prefix)
+                return
+            }
         }
     }
 }
