@@ -32,8 +32,12 @@ func ColorCode(code int) string {
 	switch {
 	case code == 200:
 		return Green(scode)
+	case code == 403:
+		return Orange(scode)
 	case code == 404:
 		return Red(scode)
+	case code == 500:
+		return Yellow(scode)
 	}
 	return Yellow(scode)
 }

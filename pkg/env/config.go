@@ -6,6 +6,10 @@ import(
 	"fafo/pkg/httpclient"
 )
 
+const (
+	DefaultFile string = "profiles/default.cfg"
+)
+
 type Config struct {
 	NumWorkers    uint
 	ClientCfg     httpclient.HttpCfg
