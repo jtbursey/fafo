@@ -29,14 +29,14 @@ func Blue(str string) string {
 
 func ColorCode(code int) string {
 	scode := fmt.Sprintf("%v", code)
-	switch {
-	case code == 200:
+	switch code {
+	case 200:
 		return Green(scode)
-	case code == 403:
+	case 403:
 		return Orange(scode)
-	case code == 404:
+	case 404:
 		return Red(scode)
-	case code == 500:
+	case 500:
 		return Yellow(scode)
 	}
 	return Yellow(scode)
