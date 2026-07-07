@@ -4,7 +4,6 @@ package httpclient
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"time"
 
@@ -67,26 +66,16 @@ func (c *HttpClient) doSlowdown() {
 	c.sem.Release()
 }
 
-func (c *HttpClient) Get(url string) *http.Response {
+func (c *HttpClient) Call(req *http.Request) *http.Response {
 	c.sem.Acquire()
-	c.Logf(7, "Getting %v\n", url)
-	req, _ := http.NewRequest(http.MethodGet, url, nil)
+	c.Logf(7, "Calling %v\n", req.URL)
 	resp, err := c.client.Do(req)
 	go c.doSlowdown()
 	if err != nil {
-		c.Errf("GET request to %v failed: %v\n", url, err)
+		c.Errf("Call to %v failed: %v\n", req.URL, err)
 		return nil
 	}
 
 	c.Logf(4, "Response: %v\n", resp.Status)
 	return resp
-}
-
-// Just read the body and close it out. Call if you don't care about the body.
-func (c *HttpClient) DropBody(resp *http.Response) {
-	_, err := io.ReadAll(resp.Body)
-	resp.Body.Close()
-	if err != nil {
-		c.Errf("Unexpected error in DropBody: %v\n", err)
-	}
 }

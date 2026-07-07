@@ -3,9 +3,7 @@
 package worker
 
 import (
-	"bufio"
 	"fmt"
-	"os"
 
 	"fafo/pkg/env"
 	"fafo/pkg/fact"
@@ -28,10 +26,14 @@ type Worker struct {
 	mode   job.WorkerMode
 }
 
+func (w *Worker) IdString() string {
+	return fmt.Sprintf("Worker %v", w.id)
+}
+
 func (w *Worker) Logf(v int, msg string, args ...any) {
 	prefix := ""
 	if log.Verb(3) {
-		prefix = fmt.Sprintf("%-13v", fmt.Sprintf("[Worker %v]: ", w.id))
+		prefix = fmt.Sprintf("%-13v", fmt.Sprintf("[%v]: ", w.IdString()))
 	}
 	log.Logf(v, prefix+msg, args...)
 }
@@ -100,22 +102,4 @@ func Run(i uint, env *env.Env) {
 
 	w.newStatus(StatusIdle)
 	w.Loop(i, env)
-}
-
-// Begin other functions for the library
-
-func (w *Worker) channelFile(listFile string, ch chan string, done *bool) {
-	file, err := os.Open(listFile)
-	if err != nil {
-		w.Errf("Failed to open file %v: %v.", listFile, err)
-		*done = true
-		return
-	}
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		ch <- fact.UrlAppend(scanner.Text(), "")
-	}
-	*done = true
-	file.Close()
 }
