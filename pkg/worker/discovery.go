@@ -5,6 +5,7 @@
 package worker
 
 import (
+	"net/http"
 	"slices"
 	"sync"
 
@@ -26,24 +27,31 @@ var (
 	aliveValid = []int {200, 204, 301, 302, 307, 401}
 )
 
+func (w *Worker) getAndClose(target *fact.Target, env *env.Env) *http.Response {
+	resp := env.Client.Get(target.Url)
+	if resp == nil {
+		w.Errf("Failed to GET target: %v\n", target.Url)
+		return nil
+	}
+	env.Client.DropBody(resp)
+	return resp
+}
+
 // Check if the target is alive
 func (w *Worker) CheckAlive(target *fact.Target, env *env.Env) {
-	resp := env.Client.Get(target.Url)
-
 	res := fact.Target{
 		Url:   target.Url,
 		Type:  target.Type,
 		Port:  target.Port,
 		Facts: make(map[fact.FactKey]fact.FactValue),
 	}
-
+	
+	resp := w.getAndClose(target, env)
 	if resp == nil {
-		w.Errf("Failed to GET target: %v\n", target.Url)
 		res.Facts[fact.IsAlive] = fact.False
 		//env.FactCh <- res // Don't send the fact to keep down on memory
 		return
 	}
-	env.Client.DropBody(resp)
 
 	if slices.Contains(aliveValid, resp.StatusCode) {
 		w.Logf(0, "%v\n", pretty.Response(resp, target.Url))
@@ -100,14 +108,34 @@ func (w *Worker) fuzzFromList(target *fact.Target, env *env.Env, listFile string
 			for {
 				select {
 				case item := <- ch:
-					newTarget := &fact.Target{
+					res := fact.Target{
 						Url:   fact.UrlAppend(target.Url, item),
 						Type:  fact.TargetPath,
 						Port:  target.Port,
 						Facts: make(map[fact.FactKey]fact.FactValue),
 					}
 
-					newTarget.Facts[fact.IsAlive] = fact.True
+					// TODO: pull the target and make sure this is not redundant
+
+					resp := w.getAndClose(&res, env)
+					if resp == nil {
+						res.Facts[fact.IsAlive] = fact.False
+						//env.FactCh <- res // Don't send the fact to keep down on memory
+						break
+					}
+
+					if slices.Contains(aliveValid, resp.StatusCode) {
+						w.Logf(0, "%v\n", pretty.Response(resp, target.Url))
+						res.Facts[fact.Exists] = fact.True
+						env.FactCh <- res
+
+						// TODO: push a job?
+					} else {
+						w.Logf(2, "%v\n", pretty.Response(resp, target.Url))
+						// JTBursey: No need to push these if they are not found
+						//res.Facts[fact.Exists] = fact.False
+						//env.FactCh <- res
+					}
 				default:
 					if done { return }
 				}
