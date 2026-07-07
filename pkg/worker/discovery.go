@@ -125,13 +125,13 @@ func (w *Worker) fuzzFromList(target *fact.Target, env *env.Env, listFile string
 					}
 
 					if slices.Contains(aliveValid, resp.StatusCode) {
-						w.Logf(0, "%v\n", pretty.Response(resp, target.Url))
+						w.Logf(0, "%v\n", pretty.Response(resp, res.Url))
 						res.Facts[fact.Exists] = fact.True
 						env.FactCh <- res
 
 						// TODO: push a job?
 					} else {
-						w.Logf(2, "%v\n", pretty.Response(resp, target.Url))
+						w.Logf(2, "%v\n", pretty.Response(resp, res.Url))
 						// JTBursey: No need to push these if they are not found
 						//res.Facts[fact.Exists] = fact.False
 						//env.FactCh <- res

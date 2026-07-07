@@ -108,7 +108,7 @@ func main() {
         firstTarget.Url = *flagEP
         firstTarget.Type = fact.TargetEp
     } else {
-        firstTarget.Url = *flagURL
+        firstTarget.Url = fact.UrlAppend(*flagURL, "")
         firstTarget.Type = fact.TargetDomain
     }
     env.Targets.Push(*firstTarget)

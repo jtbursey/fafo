@@ -114,7 +114,7 @@ func (w *Worker) channelFile(listFile string, ch chan string, done *bool) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		ch <- scanner.Text()
+		ch <- fact.UrlAppend(scanner.Text(), "")
 	}
 	*done = true
 	file.Close()

@@ -94,6 +94,10 @@ func (tm *TargetMap) PrintFindings() {
 	}
 }
 
+func (tgt *Target) IsPath() bool {
+	return strings.HasSuffix(tgt.Url, "/")
+}
+
 func (tgt *Target) PrintFacts(v int, prefix string) {
 	for key, value := range tgt.Facts {
 		log.Logf(v, "%v%-50v [%v: %v]\n", prefix, tgt.Url, key, value)
