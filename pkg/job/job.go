@@ -13,9 +13,9 @@ type WorkerMode string
 
 const (
 	ModeNone      WorkerMode = "none"
-	ModeDiscovery WorkerMode = "discovery"
-	ModeFuzzy     WorkerMode = "fuzzy"
-	ModeAttack    WorkerMode = "attack"
+	ModeDiscovery WorkerMode = "Discovery"
+	ModeFuzzy     WorkerMode = "Fuzzy"
+	ModeAttack    WorkerMode = "Attack"
 )
 
 type Action string

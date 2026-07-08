@@ -3,7 +3,9 @@
 package fam
 
 import (
+	"fmt"
 	"net/http"
+	"slices"
 
 	"fafo/pkg/fact"
 	"fafo/pkg/job"
@@ -44,6 +46,36 @@ func (c *Condition) Validate() bool {
 	return len(c.Values) > 0
 }
 
+func (c *Condition) getField(resp *http.Response, req *FamRequest, base *fact.Target) string {
+	switch c.Field {
+	case FieldRespCode:
+		return fmt.Sprintf("%v", resp.StatusCode)
+	case FieldUrl:
+		return fmt.Sprintf("%v", req.Req.URL.String())
+	default:
+		return ""
+	}
+}
+
+func (c *Condition) doCompare(field string) bool {
+	switch c.Condition {
+	case OneOf:
+		return slices.Contains(c.Values, field)
+	default:
+		return false
+	}
+}
+
+func (c *Condition) Evaluate(resp *http.Response, req *FamRequest, base *fact.Target) bool {
+	field := c.getField(resp, req, base)
+	return c.doCompare(field)
+}
+
 func (f *Fingerprint) Evaluate(resp *http.Response, req *FamRequest, base *fact.Target) bool {
-	return false
+	for _, c := range *f {
+		if !c.Evaluate(resp, req, base) {
+			return false
+		}
+	}
+	return true
 }

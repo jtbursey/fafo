@@ -4,6 +4,7 @@ package fam
 
 import (
 	"fafo/pkg/fact"
+	"fafo/pkg/job"
 )
 
 type Payload struct {
@@ -37,6 +38,7 @@ type ResponseAction struct {
 }
 
 type Action struct {
+	Id      job.Action
 	Pylds   *PayloadSet
 	Reqt    *RequestTemplate
 	RespAct *ResponseAction

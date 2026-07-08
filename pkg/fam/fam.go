@@ -247,9 +247,9 @@ func (fam *Fam) handleResponse(resp *http.Response, req *FamRequest, base *fact.
 }
 
 func (fam *Fam) handlePayload(pyld *Payload, base *fact.Target, action *Action, env *env.Env) {
-	// To be built
 	req := fam.buildRequest(pyld, base, action.Reqt)
 
+	// TODO: Figure out logic to tell the fuzzer to not Call
 	resp := env.Client.Call(req.Req)
 	if resp == nil {
 		fam.Err("Call Failed!")

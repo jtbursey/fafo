@@ -20,6 +20,7 @@ const (
 
 var(
 	CheckAlive = fam.Action{
+		Id: ActionCheckAlive,
 		Pylds: &fam.PayloadSet{
 			Id:       "",
 			File:     "",
@@ -30,7 +31,17 @@ var(
 			Url:      "BASE",
 		},
 		RespAct: &fam.ResponseAction{
-			Factcond: nil,
+			Factcond: []fam.FactConditionPair{fam.FactConditionPair{
+				fam.Fingerprint{fam.Condition{
+					Field: fam.FieldRespCode,
+					Condition: fam.OneOf,
+					Values: []string {"200", "204", "301", "302", "307", "401"},
+				}},
+				map[fact.FactKey]fact.FactValue {
+					fact.IsAlive: fact.True,
+					fact.Exists: fact.True,
+				},
+			}},
 			Jobcond:  nil,
 		},
 	}
