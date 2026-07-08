@@ -33,7 +33,7 @@ var(
 		RespAct: &fam.ResponseAction{
 			Factcond: []fam.FactConditionPair{fam.FactConditionPair{
 				fam.Fingerprint{fam.Condition{
-					Field: fam.FieldRespCode,
+					Field: fam.FieldStatusCode,
 					Condition: fam.OneOf,
 					Values: []string {"200", "204", "301", "302", "307", "401"},
 				}},

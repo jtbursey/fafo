@@ -15,8 +15,8 @@ type Field string
 type ConditionType string
 
 const (
-	FieldRespCode Field = "FieldCode"
-	FieldUrl      Field = "FieldUrl"
+	FieldStatusCode Field = "StatusCode"
+	FieldUrl        Field = "Url"
 
 	Contains ConditionType = "Contains"
 	OneOf    ConditionType = "OneOf"
@@ -48,7 +48,7 @@ func (c *Condition) Validate() bool {
 
 func (c *Condition) getField(resp *http.Response, req *FamRequest, base *fact.Target) string {
 	switch c.Field {
-	case FieldRespCode:
+	case FieldStatusCode:
 		return fmt.Sprintf("%v", resp.StatusCode)
 	case FieldUrl:
 		return fmt.Sprintf("%v", req.Req.URL.String())

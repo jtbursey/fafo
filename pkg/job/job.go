@@ -58,11 +58,10 @@ func (jq *JobQueue) Pop() any {
 	}
 
 	jq.inflight++
-	old := jq.queue
-	curJob := old[len(old) - 1]
-	//old[len(old) - 1] = nil
+	n := len(jq.queue) - 1
+	curJob := jq.queue[n]
 	curJob.index = -1
-	jq.queue = old[0 : len(old) - 1]
+	jq.queue = jq.queue[0 : n]
 	return curJob
 }
 
