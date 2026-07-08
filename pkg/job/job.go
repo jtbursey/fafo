@@ -29,7 +29,7 @@ type Job struct {
 }
 
 type JobQueue struct {
-	queue    PriorityQueue
+	queue    []Job
 	mtx      sync.Mutex
 	inflight int
 }
@@ -37,22 +37,33 @@ type JobQueue struct {
 func (jq *JobQueue) Init() {
 	jq.mtx.Lock()
 	defer jq.mtx.Unlock()
-	jq.queue = make(PriorityQueue, 0)
-	heap.Init(&jq.queue)
+	jq.queue = make([]Job, 0)
+	heap.Init(jq)
 	jq.inflight = 0
 }
 
-func (jq *JobQueue) Push(job *Job) {
+func (jq *JobQueue) Push(job any) {
 	jq.mtx.Lock()
 	defer jq.mtx.Unlock()
-	jq.queue.Push(job)
+	curJob := job.(Job)
+	curJob.index = len(jq.queue)
+	jq.queue = append(jq.queue, curJob)
 }
 
-func (jq *JobQueue) Pop() *Job {
+func (jq *JobQueue) Pop() any {
 	jq.mtx.Lock()
 	defer jq.mtx.Unlock()
+	if jq.Len() <= 0 {
+		return nil
+	}
+
 	jq.inflight++
-	return jq.queue.Pop().(*Job)
+	old := jq.queue
+	curJob := old[len(old) - 1]
+	//old[len(old) - 1] = nil
+	curJob.index = -1
+	jq.queue = old[0 : len(old) - 1]
+	return curJob
 }
 
 func (jq *JobQueue) Finish() {
@@ -66,15 +77,21 @@ func (jq *JobQueue) Finish() {
 }
 
 func (jq *JobQueue) Len() int {
-	return jq.queue.Len()
-}
-
-func (jq *JobQueue) Poll() bool {
-	return jq.Len() > 0
+	return len(jq.queue)
 }
 
 func (jq *JobQueue) Done() bool {
 	jq.mtx.Lock()
 	defer jq.mtx.Unlock()
 	return jq.Len() == 0 && jq.inflight == 0
+}
+
+func (jq *JobQueue) Less(i, j int) bool {
+	return jq.queue[i].Priority > jq.queue[j].Priority
+}
+
+func (jq *JobQueue) Swap(i, j int) {
+	jq.queue[i], jq.queue[j] = jq.queue[j], jq.queue[i]
+	jq.queue[i].index = i
+	jq.queue[j].index = j
 }

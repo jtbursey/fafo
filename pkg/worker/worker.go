@@ -70,9 +70,9 @@ func (w *Worker) dispatch(j *job.Job, t *fact.Target, e *env.Env) {
 
 func (w *Worker) Loop(id uint, env *env.Env) {
 	for ;; {
-		if env.Jobqueue.Poll() {
+		if maybeJob := env.Jobqueue.Pop(); maybeJob != nil {
+			curJob := maybeJob.(job.Job)
 			w.newStatus(StatusWorking)
-			curJob := env.Jobqueue.Pop()
 			
 			// Pull the corpus
 
@@ -84,7 +84,7 @@ func (w *Worker) Loop(id uint, env *env.Env) {
 				continue
 			}
 
-			w.dispatch(curJob, target, env)
+			w.dispatch(&curJob, target, env)
 
 			// push corpus sync
 			

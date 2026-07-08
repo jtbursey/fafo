@@ -53,7 +53,7 @@ func Loop(env *env.Env) {
             t.PrintFacts(1, prefix)
             env.Targets.Push(t)
         case j := <- env.JobCh:
-            env.Jobqueue.Push(&j)
+            env.Jobqueue.Push(j)
         default:
             if env.Jobqueue.Done() && len(env.FactCh) == 0 && len(env.JobCh) == 0 {
                 log.Logf(0, "%vAll jobs completed.\n", prefix)
@@ -114,7 +114,7 @@ func main() {
     env.Targets.Push(*firstTarget)
 
     // Create the first discovery job
-    firstJob := &job.Job{
+    firstJob := job.Job{
         Mode:     job.ModeDiscovery,
         Action:   worker.ActionCheckAlive,
         Priority: 5,
