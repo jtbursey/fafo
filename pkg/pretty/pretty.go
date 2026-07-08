@@ -7,6 +7,11 @@ import (
 	"net/http"
 )
 
+const (
+	UrlWidth    int = -75
+	PrefixWidth int = -13
+)
+
 func Red(str string) string {
 	return fmt.Sprintf("\033[31m%v\033[0m", str)
 }
@@ -32,6 +37,8 @@ func ColorCode(code int) string {
 	switch code {
 	case 200:
 		return Green(scode)
+	case 302:
+		return Green(scode)
 	case 403:
 		return Orange(scode)
 	case 404:
@@ -43,5 +50,5 @@ func ColorCode(code int) string {
 }
 
 func Response(resp *http.Response, url string) string {
-	return fmt.Sprintf("%-50v [Status: %v]", url, ColorCode(resp.StatusCode))
+	return fmt.Sprintf("%*s [Status: %v]", UrlWidth, url, ColorCode(resp.StatusCode))
 }

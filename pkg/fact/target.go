@@ -8,14 +8,15 @@ import (
 	"sync"
 
 	"fafo/pkg/log"
+	"fafo/pkg/pretty"
 )
 
 type TargetType string
 
 const (
-	TargetDomain TargetType = "domain"		// Specifically for the base domain
-	TargetPath   TargetType = "path"		// Some path from the base domain
-	TargetEp     TargetType = "endpoint"	// A specific endpoint (like index.html)
+	TargetDomain TargetType = "Domain"		// Specifically for the base domain
+	TargetPath   TargetType = "Path"		// Some path from the base domain
+	TargetEp     TargetType = "Endpoint"	// A specific endpoint (like index.html)
 )
 
 type Target struct {
@@ -100,7 +101,7 @@ func (tgt *Target) IsPath() bool {
 
 func (tgt *Target) PrintFacts(v int, prefix string) {
 	for key, value := range tgt.Facts {
-		log.Logf(v, "%v%-50v [%v: %v]\n", prefix, tgt.Url, key, value)
+		log.Logf(v, "%v%*s [%v: %v]\n", prefix, pretty.UrlWidth, tgt.Url, key, value)
 	}
 }
 

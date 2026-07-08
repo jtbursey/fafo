@@ -38,32 +38,10 @@ type FamRequest struct {
 	Type    fact.TargetType
 }
 
-// write something in the profile/config/whatever
-	// that file can be id'ed by filename or internal id after parsed to memory
-// Some previous action knows what next action should be taken
-// It passes th relevant filename/id to FAM
-// FAM reads the object/file and takes actions based on it.
-
-// Generalize
-	// Base target
-	// Channel Payloads
-
-	// In Minion:
-		// Build http request
-			// Inject the Payload (in URL, Body, Header, etc.)
-			// Custom request options
-		// Send request
-		// Receive response
-		// Do something with body (or drop)
-			// Custom matching eventually
-		// Return Action
-			// Push what job based on what observation
-			// Push what Fact based on what observation
-
 func (fam *Fam) Logf(v int, msg string, args ...any) {
 	prefix := ""
 	if log.Verb(3) {
-		prefix = fmt.Sprintf("%-13v", fmt.Sprintf("[%v]: ", fam.Caller))
+		prefix = fmt.Sprintf("%*s", pretty.PrefixWidth, fmt.Sprintf("[%v]: ", fam.Caller))
 	}
 	log.Logf(v, prefix+msg, args...)
 }
@@ -73,7 +51,7 @@ func (fam *Fam) Log(v int, msg string) {
 }
 
 func (fam *Fam) Errf(msg string, args ...any) {
-	log.Logf(0, fmt.Sprintf("%-13v%v: %v\n", fmt.Sprintf("[%v]: ", fam.Caller), pretty.Orange("Error"), msg), args...)
+	log.Logf(0, fmt.Sprintf("%*s%v: %v\n", pretty.PrefixWidth, fmt.Sprintf("[%v]: ", fam.Caller), pretty.Orange("Error"), msg), args...)
 }
 
 func (fam *Fam) Err(msg string) {
@@ -177,9 +155,10 @@ func (fam *Fam) buildBodyReader(pyld *Payload, base *fact.Target, reqt *RequestT
 
 // For now the request is simple. No need for much
 func (fam *Fam) buildRequest(pyld *Payload, base *fact.Target, reqt *RequestTemplate) *FamRequest {
-	req, _ := http.NewRequest(fam.buildMethod(pyld, reqt), fam.buildUrl(pyld, base, reqt), fam.buildBodyReader(pyld, base, reqt))
+	url := fam.buildUrl(pyld, base, reqt)
+	req, _ := http.NewRequest(fam.buildMethod(pyld, reqt), url, fam.buildBodyReader(pyld, base, reqt))
 	if req == nil {
-		fam.Err("Failed to build request!")
+		fam.Errf("Failed to build request for %v (Base: %v)\n", url)
 		return nil
 	}
 	return &FamRequest{
@@ -211,6 +190,8 @@ func (fam *Fam) handleResponse(resp *http.Response, req *FamRequest, base *fact.
 	if err != nil {
 		fam.Errf("Unexpected error in reading response body: %v", err)
 	}
+
+	// TODO: Screenshotting should go here
 
 	res := fact.Target{
 		Url:   req.Req.URL.String(),
@@ -250,6 +231,9 @@ func (fam *Fam) handleResponse(resp *http.Response, req *FamRequest, base *fact.
 
 func (fam *Fam) handlePayload(pyld *Payload, base *fact.Target, action *Action, env *env.Env) {
 	req := fam.buildRequest(pyld, base, action.Reqt)
+	if req == nil {
+		return
+	}
 
 	// TODO: Figure out logic to tell the fuzzer to not Call
 	resp := env.Client.Call(req.Req)

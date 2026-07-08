@@ -3,11 +3,13 @@
 package env
 
 import(
+	//"encoding/json"
+
 	"fafo/pkg/httpclient"
 )
 
 const (
-	DefaultFile string = "profiles/default.cfg"
+	DefaultConfigFile string = "profiles/default.cfg"
 )
 
 type Config struct {
@@ -17,8 +19,6 @@ type Config struct {
 	FuzzRecursive bool
 
 	Seclists      string
-	FuzzDirList   string
-	FuzzFileList  string
 }
 
 func DefaultConfig() *Config {
@@ -26,7 +26,5 @@ func DefaultConfig() *Config {
 		NumWorkers:    8,
 		ClientCfg:     *httpclient.DefaultConfig(),
 		FuzzRecursive: true,
-		FuzzDirList:   "Discovery/Web-Content/raft-medium-directories-lowercase.txt",
-		FuzzFileList:  "Discovery/Web-Content/raft-medium-files.txt",
 	}
 }

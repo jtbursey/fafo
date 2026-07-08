@@ -12,6 +12,7 @@ import (
     "fafo/pkg/httpclient"
     "fafo/pkg/job"
     "fafo/pkg/log"
+    "fafo/pkg/pretty"
     "fafo/pkg/worker"
 )
 
@@ -20,6 +21,9 @@ var (
     flagURL = flag.String("url", "", "The base `URL` (domain) to hit")
     flagEP = flag.String("ep", "", "The specific `Endpoint` to hit (overrides URL)")
     flagPort = flag.Int("p", 443, "The `Port` on which to scan")
+    flagOut = flag.String("o", "./findings/", "The `Directory` in which to put the findings")
+    flagC = flag.String("c", "", "The `Config File` to use")
+    flagConfig = flag.String("config", "./profiles/default.cfg", "The `Config File` to use")
 )
 
 func Greeting() {
@@ -45,13 +49,14 @@ func Greeting() {
 func Loop(env *env.Env) {
     prefix := ""
     if log.Verb(3) {
-        prefix = fmt.Sprintf("%-13v", "[Manager]: ")
+        prefix = fmt.Sprintf("%*s", pretty.PrefixWidth, "[Manager]: ")
     }
     for ;; {
         select {
         case t := <- env.FactCh:
             t.PrintFacts(1, prefix)
             env.Targets.Push(t)
+            // TODO: Output the existing URLs
         case j := <- env.JobCh:
             env.Jobqueue.Push(j)
         default:
@@ -76,7 +81,8 @@ func main() {
     // For now...
     cfg := env.DefaultConfig()
     cfg.NumWorkers = 1
-    cfg.ClientCfg.Slowdown = 5*time.Second
+    cfg.ClientCfg.MaxCalls = 1
+    cfg.ClientCfg.Slowdown = time.Second
     cfg.Seclists = "/Users/jbursey/Documents/SecLists/"
 
     Greeting()
@@ -120,6 +126,8 @@ func main() {
         Priority: 5,
         Target:   firstTarget.Key(),
     }
+
+    // TODO: Print the environment, especially the payload files
 
     env.Jobqueue.Push(firstJob)
 

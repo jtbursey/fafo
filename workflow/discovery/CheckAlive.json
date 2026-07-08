@@ -1,0 +1,57 @@
+{
+    "Id": "CheckAlive",
+    "PayloadSet": {
+        "Id": "",
+        "File": "",
+        "List": [],
+        "Type": "Domain"
+    },
+    "RequestTemplate": {
+        "Method": "GET",
+        "Url": "BASE"
+    },
+    "ResponseAction": {
+        "FactConditions": {
+            "Fingerprints": [
+                {
+                    "Field": "StatusCode",
+                    "Condition": "OneOf",
+                    "Values": ["200", "204", "301", "302", "307", "401"]
+                }
+            ],
+            "Facts": [
+                {
+                    "Key": "IsAlive",
+                    "Value": "true"
+                },
+                {
+                    "Key": "Exists",
+                    "Value": "true"
+                }
+            ]
+        },
+        "JobConditions": {
+            "Fingerprints": [
+                {
+                    "Field": "StatusCode",
+                    "Condition": "OneOf",
+                    "Values": ["200", "204", "301", "302", "307", "401"]
+                }
+            ],
+            "Jobs": [
+                {
+                    "Mode": "Discovery",
+                    "Action": "FuzzFiles",
+                    "Priority": 5,
+                    "Target": "CURRENT"
+                },
+                {
+                    "Mode": "Discovery",
+                    "Action": "FuzzDirectories",
+                    "Priority": 5,
+                    "Target": "CURRENT"
+                }
+            ]
+        }
+    }
+}

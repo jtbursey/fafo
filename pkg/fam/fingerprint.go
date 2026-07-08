@@ -16,9 +16,9 @@ type Field string
 type ConditionType string
 
 const (
-	FieldStatusCode  Field = "StatusCode"
-	FieldUrl         Field = "Url"
-	FieldFuzzRecursive Field = "RecurseFuzz"
+	FieldStatusCode    Field = "StatusCode"
+	FieldUrl           Field = "Url"
+	FieldFuzzRecursive Field = "FuzzRecursive"
 
 	Contains ConditionType = "Contains"
 	OneOf    ConditionType = "OneOf"

@@ -27,7 +27,7 @@ type HttpClient struct {
 
 func (c HttpClient) Logf(v int, msg string, args ...any) {
 	if log.Verb(v) {
-		log.Logf(3, "%-13v", "[Client]: ")
+		log.Logf(3, "%*s", pretty.PrefixWidth, "[Client]: ")
 		log.Logf(v, msg, args...)
 	}
 }
@@ -37,15 +37,15 @@ func (c HttpClient) Log(v int, msg string) {
 }
 
 func (c HttpClient) Errf(msg string, args ...any) {
-	log.Logf(0, fmt.Sprintf("%-13v%v: %v", "[Client]: ", pretty.Orange("Error"), msg), args...)
+	log.Logf(0, fmt.Sprintf("%*s%v: %v", pretty.PrefixWidth, "[Client]: ", pretty.Orange("Error"), msg), args...)
 }
 
 func DefaultConfig() *HttpCfg {
 	return &HttpCfg{
 		MaxCalls:  5,
 		Redirect:  func(req *http.Request, via []*http.Request) error { return http.ErrUseLastResponse },
-		Timeout:   time.Second,
-		Slowdown:  250*time.Millisecond,
+		Timeout:   5*time.Second,
+		Slowdown:  200*time.Millisecond,
 	}
 }
 

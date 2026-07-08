@@ -75,6 +75,7 @@ var(
 		Id: ActionFuzzFiles,
 		Pylds: &fam.PayloadSet{
 			Id:       "FUZZ",
+			// Have Config ID to reference instead
 			File:     "/Users/jbursey/Documents/SecLists/Discovery/Web-Content/raft-medium-files.txt",
 			List:     nil,
 			Type:     fact.TargetEp,

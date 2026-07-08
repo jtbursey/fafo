@@ -33,7 +33,7 @@ func (w *Worker) IdString() string {
 func (w *Worker) Logf(v int, msg string, args ...any) {
 	prefix := ""
 	if log.Verb(3) {
-		prefix = fmt.Sprintf("%-13v", fmt.Sprintf("[%v]: ", w.IdString()))
+		prefix = fmt.Sprintf("%*s", pretty.PrefixWidth, fmt.Sprintf("[%v]: ", w.IdString()))
 	}
 	log.Logf(v, prefix+msg, args...)
 }
@@ -43,7 +43,7 @@ func (w *Worker) Log(v int, msg string) {
 }
 
 func (w *Worker) Errf(msg string, args ...any) {
-	log.Logf(0, fmt.Sprintf("%-13v%v: %v", fmt.Sprintf("[Worker %v]: ", w.id), pretty.Orange("Error"), msg), args...)
+	log.Logf(0, fmt.Sprintf("%*s%v: %v", pretty.PrefixWidth, fmt.Sprintf("[Worker %v]: ", w.id), pretty.Orange("Error"), msg), args...)
 }
 
 func (w *Worker) newStatus(status WorkerStatus) {
