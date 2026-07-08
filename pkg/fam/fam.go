@@ -227,7 +227,7 @@ func (fam *Fam) handleResponse(resp *http.Response, req *FamRequest, base *fact.
 
 	// Push Facts
 	for _, pair := range respAct.Factcond {
-		if pair.Fingerprint.Evaluate(resp, req, base) {
+		if pair.Fingerprint.Evaluate(resp, req, base, env) {
 			for key, value := range pair.FactPair {
 				res.Facts[key] = value
 			}
@@ -240,8 +240,10 @@ func (fam *Fam) handleResponse(resp *http.Response, req *FamRequest, base *fact.
 
 	// Push Jobs
 	for _, pair := range respAct.Jobcond {
-		if pair.Fingerprint.Evaluate(resp, req, base) {
-			env.JobCh <- fam.buildJob(&pair.Job, &res)
+		if pair.Fingerprint.Evaluate(resp, req, base, env) {
+			for _, j := range pair.Jobs {
+				env.JobCh <- fam.buildJob(&j, &res)
+			}
 		}
 	}
 }
