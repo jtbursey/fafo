@@ -3,28 +3,28 @@
 package env
 
 import(
-	//"encoding/json"
+    //"encoding/json"
 
-	"fafo/pkg/httpclient"
+    "fafo/pkg/httpclient"
 )
 
 const (
-	DefaultConfigFile string = "profiles/default.cfg"
+    DefaultConfigFile string = "profiles/default.cfg"
 )
 
 type Config struct {
-	NumWorkers    uint
-	ClientCfg     httpclient.HttpCfg
+    NumWorkers    uint
+    ClientCfg     httpclient.HttpCfg
 
-	FuzzRecursive bool
+    FuzzRecursive bool
 
-	Seclists      string
+    Seclists      string
 }
 
 func DefaultConfig() *Config {
-	return &Config{
-		NumWorkers:    8,
-		ClientCfg:     *httpclient.DefaultConfig(),
-		FuzzRecursive: true,
-	}
+    return &Config{
+        NumWorkers:    8,
+        ClientCfg:     *httpclient.DefaultConfig(),
+        FuzzRecursive: true,
+    }
 }

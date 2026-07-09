@@ -7,6 +7,7 @@ import (
     "fmt"
     "time"
 
+    "fafo/pkg/chrome"
     "fafo/pkg/env"
     "fafo/pkg/fact"
     "fafo/pkg/httpclient"
@@ -126,6 +127,9 @@ func main() {
         Priority: 5,
         Target:   firstTarget.Key(),
     }
+
+    // TODO: Launch Chrome (for screenshotting)
+    chrome := chrome.NewChrome()
 
     // TODO: Print the environment, especially the payload files
 

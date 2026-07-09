@@ -5,19 +5,19 @@ package semaphore
 type semchan chan struct{}
 
 type Semaphore struct {
-	sem semchan
+    sem semchan
 }
 
 func New(max int) *Semaphore {
-	return &Semaphore{
-		sem: make(chan struct{}, max),
-	}
+    return &Semaphore{
+        sem: make(chan struct{}, max),
+    }
 }
 
 func (s *Semaphore) Acquire() {
-	s.sem <- struct{}{}
+    s.sem <- struct{}{}
 }
 
 func (s *Semaphore) Release() {
-	<- s.sem
+    <- s.sem
 }

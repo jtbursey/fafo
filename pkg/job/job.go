@@ -3,94 +3,94 @@
 package job
 
 import (
-	"container/heap"
-	"sync"
+    "container/heap"
+    "sync"
 
-	"fafo/pkg/log"
+    "fafo/pkg/log"
 )
 
 type WorkerMode string
 
 const (
-	ModeNone      WorkerMode = "none"
-	ModeDiscovery WorkerMode = "Discovery"
-	ModeFuzzy     WorkerMode = "Fuzzy"
-	ModeAttack    WorkerMode = "Attack"
+    ModeNone      WorkerMode = "none"
+    ModeDiscovery WorkerMode = "Discovery"
+    ModeFuzzy     WorkerMode = "Fuzzy"
+    ModeAttack    WorkerMode = "Attack"
 )
 
 type Action string
 
 type Job struct {
-	Mode     WorkerMode
-	Action   Action
-	Priority int
-	index    int
-	Target   string
+    Mode     WorkerMode
+    Action   Action
+    Priority int
+    index    int
+    Target   string
 }
 
 type JobQueue struct {
-	queue    []Job
-	mtx      sync.Mutex
-	inflight int
+    queue    []Job
+    mtx      sync.Mutex
+    inflight int
 }
 
 func (jq *JobQueue) Init() {
-	jq.mtx.Lock()
-	defer jq.mtx.Unlock()
-	jq.queue = make([]Job, 0)
-	heap.Init(jq)
-	jq.inflight = 0
+    jq.mtx.Lock()
+    defer jq.mtx.Unlock()
+    jq.queue = make([]Job, 0)
+    heap.Init(jq)
+    jq.inflight = 0
 }
 
 func (jq *JobQueue) Push(job any) {
-	jq.mtx.Lock()
-	defer jq.mtx.Unlock()
-	curJob := job.(Job)
-	curJob.index = len(jq.queue)
-	jq.queue = append(jq.queue, curJob)
+    jq.mtx.Lock()
+    defer jq.mtx.Unlock()
+    curJob := job.(Job)
+    curJob.index = len(jq.queue)
+    jq.queue = append(jq.queue, curJob)
 }
 
 func (jq *JobQueue) Pop() any {
-	jq.mtx.Lock()
-	defer jq.mtx.Unlock()
-	if jq.Len() <= 0 {
-		return nil
-	}
+    jq.mtx.Lock()
+    defer jq.mtx.Unlock()
+    if jq.Len() <= 0 {
+        return nil
+    }
 
-	jq.inflight++
-	n := len(jq.queue) - 1
-	curJob := jq.queue[n]
-	curJob.index = -1
-	jq.queue = jq.queue[0 : n]
-	return curJob
+    jq.inflight++
+    n := len(jq.queue) - 1
+    curJob := jq.queue[n]
+    curJob.index = -1
+    jq.queue = jq.queue[0 : n]
+    return curJob
 }
 
 func (jq *JobQueue) Finish() {
-	jq.mtx.Lock()
-	defer jq.mtx.Unlock()
-	if jq.inflight == 0 {
-		log.Err("Inflight counter decrimented when no jobs were in flight!\n")
-		return
-	}
-	jq.inflight--
+    jq.mtx.Lock()
+    defer jq.mtx.Unlock()
+    if jq.inflight == 0 {
+        log.Err("Inflight counter decrimented when no jobs were in flight!\n")
+        return
+    }
+    jq.inflight--
 }
 
 func (jq *JobQueue) Len() int {
-	return len(jq.queue)
+    return len(jq.queue)
 }
 
 func (jq *JobQueue) Done() bool {
-	jq.mtx.Lock()
-	defer jq.mtx.Unlock()
-	return jq.Len() == 0 && jq.inflight == 0
+    jq.mtx.Lock()
+    defer jq.mtx.Unlock()
+    return jq.Len() == 0 && jq.inflight == 0
 }
 
 func (jq *JobQueue) Less(i, j int) bool {
-	return jq.queue[i].Priority > jq.queue[j].Priority
+    return jq.queue[i].Priority > jq.queue[j].Priority
 }
 
 func (jq *JobQueue) Swap(i, j int) {
-	jq.queue[i], jq.queue[j] = jq.queue[j], jq.queue[i]
-	jq.queue[i].index = i
-	jq.queue[j].index = j
+    jq.queue[i], jq.queue[j] = jq.queue[j], jq.queue[i]
+    jq.queue[i].index = i
+    jq.queue[j].index = j
 }
