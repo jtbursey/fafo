@@ -33,8 +33,9 @@ type RequestTemplate struct {
     // If Y, push a job (mode, action, prio, target)
 type ResponseAction struct {
     // Body handler here
-    Factcond []FactConditionPair
-    Jobcond  []JobConditionPair
+    ScrShcond Fingerprint
+    Factcond  []FactConditionPair
+    Jobcond   []JobConditionPair
 }
 
 type Action struct {

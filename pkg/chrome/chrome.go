@@ -20,6 +20,7 @@ type Chrome struct {
     browserCtx    context.Context
 	browserCancel context.CancelFunc
     baseTasks     chromedp.Tasks
+    doneSignal    chan bool
 }
 
 type instance struct {
@@ -104,6 +105,7 @@ func NewChrome(env *env.Env) *Chrome {
         inst:          inst,
         browserCtx:    browserCtx,
         browserCancel: browserCancel,
+        doneSignal:    make(chan bool, 0),
     }
 
     chrome.baseTasks = chromedp.Tasks{
@@ -139,13 +141,33 @@ func (c *Chrome) Err(msg string) {
 
 func (c *Chrome) ScreenShot() {
     c.Log(0, "Snap!\n")
+    // Todo: Add a callback thing to grab the call semaphore from httpclient
 }
 
 func (c *Chrome) Loop(env *env.Env) {
+    c.Log(7, "Chrome has Started\n")
     for {
         select {
         case <- env.ScrShCh:
             c.ScreenShot()
+        default:
+            if c.checkDone() { return }
         }
     }
+}
+
+func (c *Chrome) SignalDone() {
+    c.doneSignal <- true
+}
+
+func (c *Chrome) checkDone() bool {
+    select {
+    case isdone := <- c.doneSignal:
+        if isdone {
+            return true
+        }
+    default:
+        return false
+    }
+    return false
 }

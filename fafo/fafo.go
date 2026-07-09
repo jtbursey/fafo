@@ -130,13 +130,17 @@ func main() {
         Target:   firstTarget.Key(),
     }
 
+    var chrm *chrome.Chrome
     if !*flagNoScrSh {
-        chrome := chrome.NewChrome(env)
-        if chrome == nil {
+        chrm = chrome.NewChrome(env)
+        if chrm == nil {
             log.Err("Failed to launch Chrome!")
             return
         }
-        go chrome.Loop(env)
+        go chrm.Loop(env)
+    } else {
+        log.Log(0, "Screenshotting is Disabled\n")
+        env.Cfg.DisableScreenShot = true
     }
 
     // TODO: Print the environment, especially the payload files
@@ -144,6 +148,8 @@ func main() {
     // This kicks everything off
     env.Jobqueue.Push(firstJob)
     Loop(env)
+
+    chrm.SignalDone()
 
     // TODO: Findings to output dir
     env.Targets.PrintFindings()

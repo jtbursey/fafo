@@ -191,10 +191,14 @@ func (fam *Fam) handleResponse(resp *http.Response, req *FamRequest, base *fact.
         fam.Errf("Unexpected error in reading response body: %v", err)
     }
 
-    // TODO: Screenshotting should go here
+    if !env.Cfg.DisableScreenShot && respAct.ScrShcond != nil {
+        if respAct.ScrShcond.Evaluate(resp, req, base, env) {
+            env.ScrShCh <- "doit"
+        }
+    }
 
     res := fact.Target{
-        Url:   req.Req.URL.String(),
+        Url:   resp.Request.URL.String(), // Use the final URL
         Type:  req.Type,
         Port:  base.Port,
         Facts: make(map[fact.FactKey]fact.FactValue),

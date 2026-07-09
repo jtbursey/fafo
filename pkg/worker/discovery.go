@@ -32,6 +32,13 @@ var(
             Url:      "BASE",
         },
         RespAct: &fam.ResponseAction{
+            ScrShcond: fam.Fingerprint{
+                fam.Condition{
+                    Field: fam.FieldStatusCode,
+                    Condition: fam.Equals,
+                    Values: []string {"200"},
+                },
+            },
             Factcond: []fam.FactConditionPair{fam.FactConditionPair{
                 fam.Fingerprint{
                     fam.Condition{
@@ -85,6 +92,13 @@ var(
             Url:      "BASE/FUZZ",
         },
         RespAct: &fam.ResponseAction{
+            ScrShcond: fam.Fingerprint{
+                fam.Condition{
+                    Field: fam.FieldStatusCode,
+                    Condition: fam.Equals,
+                    Values: []string {"200"},
+                },
+            },
             Factcond: []fam.FactConditionPair{fam.FactConditionPair{
                 fam.Fingerprint{fam.Condition{
                     Field: fam.FieldStatusCode,
@@ -112,6 +126,13 @@ var(
             Url:      "BASE/FUZZ",
         },
         RespAct: &fam.ResponseAction{
+            ScrShcond: fam.Fingerprint{
+                fam.Condition{
+                    Field: fam.FieldStatusCode,
+                    Condition: fam.Equals,
+                    Values: []string {"200"},
+                },
+            },
             Factcond: []fam.FactConditionPair{fam.FactConditionPair{
                 fam.Fingerprint{fam.Condition{
                     Field: fam.FieldStatusCode,

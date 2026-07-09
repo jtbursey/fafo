@@ -23,7 +23,7 @@ var (
 // 4:  
 // 5:  
 // 6:  
-// 7:  Print http Client
+// 7:  Print Client logs
 // 8:  
 // 9:  
 // 10: Print all debug information
