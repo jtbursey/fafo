@@ -8,3 +8,4 @@
 - runtime monitoring
 - screenshot like gowitness
 - on 302, check response header for Location
+- subdommain enum
