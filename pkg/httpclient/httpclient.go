@@ -13,10 +13,11 @@ import (
 )
 
 type HttpCfg struct {
-    MaxCalls int
-    Redirect func(req *http.Request, via []*http.Request) error
-    Timeout  time.Duration
-    Slowdown time.Duration // Time in between consecutive calls (allowing for MaxCalls simultaneous calls)
+    UserAgent string
+    MaxCalls  int
+    Redirect  func(req *http.Request, via []*http.Request) error
+    Timeout   time.Duration
+    Slowdown  time.Duration // Time in between consecutive calls (allowing for MaxCalls simultaneous calls)
 }
 
 type HttpClient struct {
@@ -42,6 +43,7 @@ func (c HttpClient) Errf(msg string, args ...any) {
 
 func DefaultConfig() *HttpCfg {
     return &HttpCfg{
+        UserAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
         MaxCalls:  5,
         Redirect:  func(req *http.Request, via []*http.Request) error { return http.ErrUseLastResponse },
         Timeout:   5*time.Second,

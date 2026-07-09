@@ -25,6 +25,7 @@ var (
     flagOut = flag.String("o", "./findings/", "The `Directory` in which to put the findings")
     flagC = flag.String("c", "", "The `Config File` to use")
     flagConfig = flag.String("config", "./profiles/default.cfg", "The `Config File` to use")
+    flagNoScrSh = flag.Bool("disable-screenshot", false, "Disable all screenshotting functionality")
 )
 
 func Greeting() {
@@ -52,7 +53,7 @@ func Loop(env *env.Env) {
     if log.Verb(3) {
         prefix = fmt.Sprintf("%*s", pretty.PrefixWidth, "[Manager]: ")
     }
-    for ;; {
+    for {
         select {
         case t := <- env.FactCh:
             t.PrintFacts(1, prefix)
@@ -97,6 +98,7 @@ func main() {
         Jobqueue: *jq,
         Cfg:      *cfg,
         Client:   *httpclient,
+        ScrShCh:  make(chan string, 10),
         JobCh:    make(chan job.Job, 10),
         FactCh:   make(chan fact.Target, 10),
     }
@@ -128,17 +130,22 @@ func main() {
         Target:   firstTarget.Key(),
     }
 
-    // TODO: Launch Chrome (for screenshotting)
-    chrome := chrome.NewChrome()
+    if !*flagNoScrSh {
+        chrome := chrome.NewChrome(env)
+        if chrome == nil {
+            log.Err("Failed to launch Chrome!")
+            return
+        }
+        go chrome.Loop(env)
+    }
 
     // TODO: Print the environment, especially the payload files
 
+    // This kicks everything off
     env.Jobqueue.Push(firstJob)
-
-    // TODO: Print debug information
     Loop(env)
 
-    // TODO: Print Findings
+    // TODO: Findings to output dir
     env.Targets.PrintFindings()
 }
 

@@ -69,7 +69,7 @@ func (w *Worker) dispatch(j *job.Job, t *fact.Target, e *env.Env) {
 }
 
 func (w *Worker) Loop(id uint, env *env.Env) {
-    for ;; {
+    for {
         if maybeJob := env.Jobqueue.Pop(); maybeJob != nil {
             curJob := maybeJob.(job.Job)
             w.newStatus(StatusWorking)
