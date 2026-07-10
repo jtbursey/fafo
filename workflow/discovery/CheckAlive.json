@@ -8,7 +8,7 @@
     },
     "RequestTemplate": {
         "Method": "GET",
-        "Url": "BASE"
+        "UrlTemplate": "BASE"
     },
     "ResponseAction": {
         "ScreenShotConditions": [
