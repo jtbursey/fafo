@@ -68,6 +68,14 @@ func (c *HttpClient) doSlowdown() {
     c.sem.Release()
 }
 
+func (c *HttpClient) BorrowSem() {
+    c.sem.Acquire()
+}
+
+func (c *HttpClient) ReturnSem() {
+    c.doSlowdown()
+}
+
 func (c *HttpClient) Call(req *http.Request) *http.Response {
     c.sem.Acquire()
     c.Logf(7, "Calling %v\n", req.URL)

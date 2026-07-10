@@ -193,7 +193,7 @@ func (fam *Fam) handleResponse(resp *http.Response, req *FamRequest, base *fact.
 
     if !env.Cfg.DisableScreenShot && respAct.ScrShcond != nil {
         if respAct.ScrShcond.Evaluate(resp, req, base, env) {
-            env.ScrShCh <- "doit"
+            env.ScrShCh <- *resp.Request
         }
     }
 

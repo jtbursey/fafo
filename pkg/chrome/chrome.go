@@ -5,9 +5,12 @@ package chrome
 import (
     "context"
     "fmt"
+    "net/http"
     "os"
+    "path/filepath"
 
     "github.com/chromedp/cdproto/network"
+    "github.com/chromedp/cdproto/page"
     "github.com/chromedp/chromedp"
 
     "fafo/pkg/env"
@@ -139,17 +142,79 @@ func (c *Chrome) Err(msg string) {
     c.Errf("%v", msg)
 }
 
-func (c *Chrome) ScreenShot() {
-    c.Log(0, "Snap!\n")
-    // Todo: Add a callback thing to grab the call semaphore from httpclient
+func (c *Chrome) ScreenShot(req *http.Request, env *env.Env) {
+    tabCtx, tabCancel := chromedp.NewContext(c.browserCtx)
+    defer tabCancel()
+
+    navigationCtx, navigationCancel := context.WithTimeout(tabCtx, env.Cfg.ClientCfg.Timeout)
+    defer navigationCancel()
+
+    tasks := append(chromedp.Tasks{}, c.baseTasks...)
+
+    tasks = append(tasks, chromedp.ActionFunc(func(ctx context.Context) error {
+        if err := network.ClearBrowserCookies().Do(ctx); err != nil {
+            c.Errf("Failed to clear Cookies: %v", err)
+        }
+
+        if err := chromedp.Navigate(req.URL.String()).Do(ctx); err != nil {
+            return err
+        }
+
+        if err := chromedp.WaitReady("body", chromedp.ByQuery).Do(ctx); err != nil {
+            return err
+        }
+
+        return nil
+    }))
+
+    var img []byte
+    tasks = append(tasks, chromedp.ActionFunc(func(ctx context.Context) error {
+        params := page.CaptureScreenshot().WithQuality(int64(60)).WithFormat(page.CaptureScreenshotFormat("jpeg"))
+
+        var err error
+        img, err = params.Do(ctx)
+        if err != nil {
+            c.Errf("Screenshot was not captured: %v", err)
+            return err
+        }
+
+        return nil
+    }))
+
+    env.Client.BorrowSem()
+    if err := chromedp.Run(navigationCtx, tasks); err != nil {
+        c.Errf("Failed to capture Screenshot: %v", err)
+        env.Client.ReturnSem()
+        return
+    }
+    env.Client.ReturnSem()
+
+    filename := "tmp.jpeg"
+    if err := os.WriteFile(filepath.Join(".", filename), img, os.FileMode(0664)); err != nil {
+        c.Errf("Failed to save screenshot: %w", err)
+        return
+    }
+
+    c.Logf(0, "Screenshot Saved: %v", filename)
+
+    // An option:
+    // decoded, _, err := image.Decode(bytes.NewReader(img))
+    // if err != nil {
+    //     return nil, fmt.Errorf("failed to decode screenshot image: %w", err)
+    // }
+
+    // hash, err := imagehash.PerceptionHash(decoded)
+    // if err != nil {
+    //     return nil, fmt.Errorf("failed to calculate image perception hash: %w", err)
+    // }
 }
 
 func (c *Chrome) Loop(env *env.Env) {
     c.Log(7, "Chrome has Started\n")
     for {
         select {
-        case <- env.ScrShCh:
-            c.ScreenShot()
+        case req := <- env.ScrShCh:
+            c.ScreenShot(&req, env)
         default:
             if c.checkDone() { return }
         }

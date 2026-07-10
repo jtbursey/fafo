@@ -5,6 +5,7 @@ package main
 import (
     "flag"
     "fmt"
+    "net/http"
     "time"
 
     "fafo/pkg/chrome"
@@ -98,7 +99,7 @@ func main() {
         Jobqueue: *jq,
         Cfg:      *cfg,
         Client:   *httpclient,
-        ScrShCh:  make(chan string, 10),
+        ScrShCh:  make(chan http.Request, 10),
         JobCh:    make(chan job.Job, 10),
         FactCh:   make(chan fact.Target, 10),
     }
