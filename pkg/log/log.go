@@ -11,7 +11,7 @@ import (
 )
 
 var (
-    flagVerb = flag.Int("v", 10, "The `verbosity` level (0-10)") // Set for debugging while developing
+    flagVerb = flag.Int("v", 0, "The `verbosity` level (0-10)")
     mtx sync.Mutex
 )
 
@@ -51,5 +51,5 @@ func Errf(msg string, args ...any) {
 }
 
 func Err(msg string) {
-    Errf("%v", msg)
+    Errf("%v\n", msg)
 }

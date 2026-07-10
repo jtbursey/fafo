@@ -141,11 +141,11 @@ func (c *Chrome) Log(v int, msg string) {
 }
 
 func (c *Chrome) Errf(msg string, args ...any) {
-    log.Logf(0, fmt.Sprintf("%*s%v: %v\n", pretty.PrefixWidth, c.prefix(), pretty.Orange("Error"), msg), args...)
+    log.Logf(0, fmt.Sprintf("%*s%v: %v", pretty.PrefixWidth, c.prefix(), pretty.Orange("Error"), msg), args...)
 }
 
 func (c *Chrome) Err(msg string) {
-    c.Errf("%v", msg)
+    c.Errf("%v\n", msg)
 }
 
 func timestamp() string {
@@ -187,7 +187,7 @@ func (c *Chrome) ScreenShot(req *http.Request, env *env.Env) {
 
     tasks = append(tasks, chromedp.ActionFunc(func(ctx context.Context) error {
         if err := network.ClearBrowserCookies().Do(ctx); err != nil {
-            c.Errf("Failed to clear Cookies: %v", err)
+            c.Errf("Failed to clear Cookies: %v\n", err)
         }
 
         if err := chromedp.Navigate(req.URL.String()).Do(ctx); err != nil {
@@ -208,7 +208,7 @@ func (c *Chrome) ScreenShot(req *http.Request, env *env.Env) {
         var err error
         img, err = params.Do(ctx)
         if err != nil {
-            c.Errf("Screenshot was not captured: %v", err)
+            c.Errf("Screenshot was not captured: %v\n", err)
             return err
         }
 
@@ -216,7 +216,7 @@ func (c *Chrome) ScreenShot(req *http.Request, env *env.Env) {
     }))
 
     if err := chromedp.Run(navigationCtx, tasks); err != nil {
-        c.Errf("Failed to capture Screenshot: %v", err)
+        c.Errf("Failed to capture Screenshot: %v\n", err)
         env.Client.ReturnSem()
         return
     }
@@ -224,7 +224,7 @@ func (c *Chrome) ScreenShot(req *http.Request, env *env.Env) {
 
     filename := c.craftPathname(req, env)
     if err := os.WriteFile(filename, img, os.FileMode(0664)); err != nil {
-        c.Errf("Failed to save screenshot: %w", err)
+        c.Errf("Failed to save screenshot: %w\n", err)
         return
     }
 

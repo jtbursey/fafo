@@ -51,11 +51,11 @@ func (fam *Fam) Log(v int, msg string) {
 }
 
 func (fam *Fam) Errf(msg string, args ...any) {
-    log.Logf(0, fmt.Sprintf("%*s%v: %v\n", pretty.PrefixWidth, fmt.Sprintf("[%v]: ", fam.Caller), pretty.Orange("Error"), msg), args...)
+    log.Logf(0, fmt.Sprintf("%*s%v: %v", pretty.PrefixWidth, fmt.Sprintf("[%v]: ", fam.Caller), pretty.Orange("Error"), msg), args...)
 }
 
 func (fam *Fam) Err(msg string) {
-    fam.Errf("%v", msg)
+    fam.Errf("%v\n", msg)
 }
 
 func (fam *Fam) Init(env *env.Env) {
@@ -67,7 +67,7 @@ func wc(filename string) int {
     count := 0
     file, err := os.Open(filename)
     if err != nil {
-        log.Errf("Failed to open file %v: %v.", filename, err)
+        log.Errf("Failed to open file %v: %v\n", filename, err)
         return -1
     }
 
@@ -82,7 +82,7 @@ func wc(filename string) int {
 func (fam *Fam) channelFile(Pylds *PayloadSet) {
     file, err := os.Open(Pylds.File)
     if err != nil {
-        fam.Errf("Failed to open file %v: %v.", Pylds.File, err)
+        fam.Errf("Failed to open file %v: %v\n", Pylds.File, err)
         return
     }
 
@@ -188,7 +188,7 @@ func (fam *Fam) handleResponse(resp *http.Response, req *FamRequest, base *fact.
     _, err := io.ReadAll(resp.Body)
     resp.Body.Close()
     if err != nil {
-        fam.Errf("Unexpected error in reading response body: %v", err)
+        fam.Errf("Unexpected error in reading response body: %v\n", err)
     }
 
     if !env.Cfg.DisableScreenShot && respAct.ScrShcond != nil {

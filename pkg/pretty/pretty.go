@@ -10,6 +10,7 @@ import (
 const (
     UrlWidth    int = -75
     PrefixWidth int = -13
+    ConfigWidth int = -25
 )
 
 func Red(str string) string {
@@ -47,6 +48,10 @@ func ColorCode(code int) string {
         return Yellow(scode)
     }
     return Yellow(scode)
+}
+
+func Config(label string, config any) string {
+    return fmt.Sprintf("      <=> %*s%v", ConfigWidth, fmt.Sprintf("%v: ", label), config)
 }
 
 func Response(resp *http.Response, url string) string {

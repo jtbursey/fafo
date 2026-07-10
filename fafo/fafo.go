@@ -8,7 +8,6 @@ import (
     "fmt"
     "net/http"
     "os"
-    "time"
 
     "fafo/pkg/chrome"
     "fafo/pkg/env"
@@ -25,9 +24,9 @@ var (
     flagURL = flag.String("url", "", "The base `URL` (domain) to hit")
     flagEP = flag.String("ep", "", "The specific `Endpoint` to hit (overrides URL)")
     flagPort = flag.Int("p", 443, "The `Port` on which to scan")
-    flagOut = flag.String("o", "./findings", "The `Directory` in which to put the findings")
+    flagOut = flag.String("o", env.DefaultFindingsDir, "The `Directory` in which to put the findings")
     flagC = flag.String("c", "", "The `Config File` to use")
-    flagConfig = flag.String("config", "./profiles/default.cfg", "The `Config File` to use")
+    flagConfig = flag.String("config", env.DefaultConfigFile, "The `Config File` to use")
     flagNoScrSh = flag.Bool("disable-screenshot", false, "Disable all screenshotting functionality")
 )
 
@@ -48,7 +47,7 @@ func Greeting() {
     log.Log(0, "  | | | |_| |/ / / /  | | | | | | (_) | |_| | | | | (_| |_  | |   | | | | | (_| | \\ \\_/ / |_| | |_\n")
     log.Log(0, "  \\_|  \\__,_/___/___| \\_| |_/_|  \\___/ \\__,_|_| |_|\\__,_( ) \\_|   |_|_| |_|\\__,_|  \\___/ \\__,_|\\__|\n")
     log.Logf(0, "   %-53v|/\n", "")
-    log.Log(0, "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n\n\n")
+    log.Log(0, "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n\n")
 }
 
 func mkdir(pathname string) {
@@ -90,14 +89,18 @@ func main() {
         return
     }
 
-    // parse Config
-    // For now...
     cfg := env.DefaultConfig()
+    var configFile string
+    if *flagC != "" {
+        configFile = *flagC
+    } else {
+        configFile = *flagConfig
+    }
+    
+    if err := cfg.Parse(configFile); err != nil {
+        return
+    }
     cfg.FindingsDir = *flagOut
-    cfg.NumWorkers = 1
-    cfg.ClientCfg.MaxCalls = 1
-    cfg.ClientCfg.Slowdown = 5*time.Second
-    cfg.Seclists = "/Users/jbursey/Documents/SecLists/"
 
     Greeting()
 
@@ -115,11 +118,6 @@ func main() {
         FactCh:   make(chan fact.Target, 10),
     }
 
-    // Spawn the Worker Threads
-    for i := uint(0); i < env.Cfg.NumWorkers; i++ {
-        go worker.Run(i, env)
-    }
-
     // Define the top-level target
     firstTarget := &fact.Target{
         Port:  *flagPort,
@@ -132,6 +130,7 @@ func main() {
         firstTarget.Url = *flagURL
         firstTarget.Type = fact.TargetDomain
     }
+    env.FirstTarget = *firstTarget
     env.Targets.Push(*firstTarget)
 
     // Create the first discovery job
@@ -141,6 +140,8 @@ func main() {
         Priority: 5,
         Target:   firstTarget.Key(),
     }
+
+    env.Debug()
 
     mkdir(env.Cfg.FindingsDir)
 
@@ -160,7 +161,10 @@ func main() {
         env.Cfg.DisableScreenShot = true
     }
 
-    // TODO: Print the environment, especially the payload files
+    // Spawn the Worker Threads
+    for i := uint(0); i < env.Cfg.NumWorkers; i++ {
+        go worker.Run(i, env)
+    }
 
     // This kicks everything off
     env.Jobqueue.Push(firstJob)

@@ -13,11 +13,12 @@ import (
 )
 
 type HttpCfg struct {
-    UserAgent string
-    MaxCalls  int
-    Redirect  func(req *http.Request, via []*http.Request) error
-    Timeout   time.Duration
-    Slowdown  time.Duration // Time in between consecutive calls (allowing for MaxCalls simultaneous calls)
+    UserAgent  string        `json:"UserAgent"`
+    MaxCalls   int           `json:"MaxCalls"`
+    doRedirect bool          `json:"FollowRedirects"`
+    Redirect   func(req *http.Request, via []*http.Request) error
+    Timeout    time.Duration `json:"Timeout"`
+    Slowdown   time.Duration `json:"Slowdown"`
 }
 
 type HttpClient struct {
@@ -43,11 +44,12 @@ func (c HttpClient) Errf(msg string, args ...any) {
 
 func DefaultConfig() *HttpCfg {
     return &HttpCfg{
-        UserAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
-        MaxCalls:  5,
-        Redirect:  func(req *http.Request, via []*http.Request) error { return http.ErrUseLastResponse },
-        Timeout:   5*time.Second,
-        Slowdown:  200*time.Millisecond,
+        UserAgent:  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        MaxCalls:   5,
+        doRedirect: false,
+        Redirect:   func(req *http.Request, via []*http.Request) error { return http.ErrUseLastResponse },
+        Timeout:    5000*time.Millisecond,
+        Slowdown:   200*time.Millisecond,
     }
 }
 
@@ -60,6 +62,23 @@ func New(cfg HttpCfg) *HttpClient {
         sem:      *semaphore.New(cfg.MaxCalls),
         slowdown: cfg.Slowdown,
     }
+}
+
+func (c *HttpCfg) PostParse() {
+    if !c.doRedirect {
+        c.Redirect = func(req *http.Request, via []*http.Request) error { return http.ErrUseLastResponse }
+    }
+
+    c.Slowdown = c.Slowdown * time.Millisecond
+    c.Timeout = c.Timeout * time.Millisecond
+}
+
+func (c *HttpCfg) Debug() {
+    log.Logf(0, "%v\n", pretty.Config("MaxCalls", c.MaxCalls))
+    log.Logf(0, "%v\n", pretty.Config("Slowdown", c.Slowdown))
+    log.Logf(0, "%v\n", pretty.Config("Timeout", c.Timeout))
+    log.Logf(0, "%v\n", pretty.Config("FollowRedirects", c.doRedirect))
+    log.Logf(0, "%v\n", pretty.Config("UserAgent", c.UserAgent))
 }
 
 // Wait for slowdown time until we let another thread in here again
