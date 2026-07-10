@@ -11,8 +11,15 @@
         "Url": "BASE"
     },
     "ResponseAction": {
+        "ScreenShotConditions": [
+            {
+                "Field": "StatusCode",
+                "Condition": "OneOf",
+                "Values": ["200"]
+            }
+        ],
         "FactConditions": {
-            "Fingerprints": [
+            "Conditions": [
                 {
                     "Field": "StatusCode",
                     "Condition": "OneOf",
@@ -31,11 +38,16 @@
             ]
         },
         "JobConditions": {
-            "Fingerprints": [
+            "Conditions": [
                 {
                     "Field": "StatusCode",
                     "Condition": "OneOf",
                     "Values": ["200", "204", "301", "302", "307", "401"]
+                },
+                {
+                    "Field": "TargetType",
+                    "Condition": "OneOf",
+                    "Values": ["Domain", "Path"]
                 }
             ],
             "Jobs": [

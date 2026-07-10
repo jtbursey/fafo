@@ -8,6 +8,9 @@ import (
     "net/http"
     "os"
     "path/filepath"
+    "strings"
+    "time"
+    "unicode"
 
     "github.com/chromedp/cdproto/network"
     "github.com/chromedp/cdproto/page"
@@ -24,6 +27,8 @@ type Chrome struct {
 	browserCancel context.CancelFunc
     baseTasks     chromedp.Tasks
     doneSignal    chan bool
+
+    Extension     string
 }
 
 type instance struct {
@@ -109,6 +114,7 @@ func NewChrome(env *env.Env) *Chrome {
         browserCtx:    browserCtx,
         browserCancel: browserCancel,
         doneSignal:    make(chan bool, 0),
+        Extension:     env.Cfg.ScrShExt,
     }
 
     chrome.baseTasks = chromedp.Tasks{
@@ -142,7 +148,35 @@ func (c *Chrome) Err(msg string) {
     c.Errf("%v", msg)
 }
 
+func timestamp() string {
+    var stamp string
+    stamp = time.Now().Format("2006-01-02 15:04:05")
+    stamp = strings.ReplaceAll(stamp, "-", "")
+    stamp = strings.ReplaceAll(stamp, " ", "")
+    stamp = strings.ReplaceAll(stamp, ":", "")
+    return stamp
+}
+
+func safeFilename(origin string) string {
+    origin = strings.ReplaceAll(origin, "://", ".")
+    ret := ""
+    for _, c := range origin {
+        if unicode.IsLetter(c) || unicode.IsDigit(c) || c == '.' {
+            ret += string(c)
+        } else {
+            ret += "-"
+        }
+    }
+    return ret
+}
+
+func (c *Chrome) craftPathname(req *http.Request, env *env.Env) string {
+    return filepath.Join(env.Cfg.ScrShDir, fmt.Sprintf("%v-%v.%v", timestamp(), safeFilename(req.URL.String()), c.Extension))
+}
+
 func (c *Chrome) ScreenShot(req *http.Request, env *env.Env) {
+    // Borrowing here because somehthing times out if I make the context and then wait.
+    env.Client.BorrowSem()
     tabCtx, tabCancel := chromedp.NewContext(c.browserCtx)
     defer tabCancel()
 
@@ -169,7 +203,7 @@ func (c *Chrome) ScreenShot(req *http.Request, env *env.Env) {
 
     var img []byte
     tasks = append(tasks, chromedp.ActionFunc(func(ctx context.Context) error {
-        params := page.CaptureScreenshot().WithQuality(int64(60)).WithFormat(page.CaptureScreenshotFormat("jpeg"))
+        params := page.CaptureScreenshot().WithQuality(int64(60)).WithFormat(page.CaptureScreenshotFormat(c.Extension))
 
         var err error
         img, err = params.Do(ctx)
@@ -181,7 +215,6 @@ func (c *Chrome) ScreenShot(req *http.Request, env *env.Env) {
         return nil
     }))
 
-    env.Client.BorrowSem()
     if err := chromedp.Run(navigationCtx, tasks); err != nil {
         c.Errf("Failed to capture Screenshot: %v", err)
         env.Client.ReturnSem()
@@ -189,13 +222,13 @@ func (c *Chrome) ScreenShot(req *http.Request, env *env.Env) {
     }
     env.Client.ReturnSem()
 
-    filename := "tmp.jpeg"
-    if err := os.WriteFile(filepath.Join(".", filename), img, os.FileMode(0664)); err != nil {
+    filename := c.craftPathname(req, env)
+    if err := os.WriteFile(filename, img, os.FileMode(0664)); err != nil {
         c.Errf("Failed to save screenshot: %w", err)
         return
     }
 
-    c.Logf(0, "Screenshot Saved: %v", filename)
+    c.Logf(0, "%v\n", pretty.Screenshot(req.URL.String(), filename))
 
     // An option:
     // decoded, _, err := image.Decode(bytes.NewReader(img))

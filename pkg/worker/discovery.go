@@ -59,6 +59,11 @@ var(
                         Condition: fam.OneOf,
                         Values: []string {"200", "204", "301", "302", "307", "401"},
                     },
+                    fam.Condition{
+                        Field: fam.FieldTargetType,
+                        Condition: fam.OneOf,
+                        Values: []string {"Domain", "Path"},
+                    },
                 },
                 []job.Job{
                     job.Job{
@@ -154,6 +159,11 @@ var(
                         Field: fam.FieldFuzzRecursive,
                         Condition: fam.Equals,
                         Values: []string {"true"},
+                    },
+                    fam.Condition{
+                        Field: fam.FieldTargetType,
+                        Condition: fam.OneOf,
+                        Values: []string {"Domain", "Path"},
                     },
                 },
                 []job.Job{

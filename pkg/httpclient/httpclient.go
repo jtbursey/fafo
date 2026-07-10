@@ -73,7 +73,7 @@ func (c *HttpClient) BorrowSem() {
 }
 
 func (c *HttpClient) ReturnSem() {
-    c.doSlowdown()
+    go c.doSlowdown()
 }
 
 func (c *HttpClient) Call(req *http.Request) *http.Response {

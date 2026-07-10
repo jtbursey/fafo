@@ -19,17 +19,18 @@ const (
     FieldStatusCode    Field = "StatusCode"
     FieldUrl           Field = "Url"
     FieldFuzzRecursive Field = "FuzzRecursive"
+    FieldTargetType    Field = "TargetType"
 
-    Contains ConditionType = "Contains"
-    OneOf    ConditionType = "OneOf"
-    Equals   ConditionType = "Equals"
+    Contains           ConditionType = "Contains"
+    OneOf              ConditionType = "OneOf"
+    Equals             ConditionType = "Equals"
 )
 
 // Field, Condition Type, Value(s)
 type Condition struct {
     Field     Field                // The Field of request or response to check
     Condition ConditionType        // The condition
-    Values    []string            // The values to check against
+    Values    []string             // The values to check against
 }
 
 type Fingerprint []Condition
@@ -62,6 +63,8 @@ func (c *Condition) getField(resp *http.Response, req *FamRequest, base *fact.Ta
         return fmt.Sprintf("%v", req.Req.URL.String())
     case FieldFuzzRecursive:
         return fmt.Sprintf("%v", env.Cfg.FuzzRecursive)
+    case FieldTargetType:
+        return fmt.Sprintf("%v", req.Type)
     default:
         return ""
     }

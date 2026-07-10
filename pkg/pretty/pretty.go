@@ -52,3 +52,7 @@ func ColorCode(code int) string {
 func Response(resp *http.Response, url string) string {
     return fmt.Sprintf("%*s [Status: %v]", UrlWidth, url, ColorCode(resp.StatusCode))
 }
+
+func Screenshot(url string, pathname string) string {
+    return fmt.Sprintf("%*s [Screenshot: %v]", UrlWidth, url, pathname)
+}

@@ -1,3 +1,5 @@
 bin/
 profiles/*.cfg
 .DS_Store
+*.jpeg
+findings/

@@ -19,6 +19,10 @@ type Config struct {
     FuzzRecursive     bool
     DisableScreenShot bool
 
+    FindingsDir       string
+    ScrShDir          string
+    ScrShExt          string
+
     Seclists          string
 }
 
@@ -28,5 +32,6 @@ func DefaultConfig() *Config {
         ClientCfg:         *httpclient.DefaultConfig(),
         FuzzRecursive:     true,
         DisableScreenShot: false,
+        ScrShExt:          "jpeg",
     }
 }

@@ -3,9 +3,11 @@
 package main
 
 import (
+    "path/filepath"
     "flag"
     "fmt"
     "net/http"
+    "os"
     "time"
 
     "fafo/pkg/chrome"
@@ -23,7 +25,7 @@ var (
     flagURL = flag.String("url", "", "The base `URL` (domain) to hit")
     flagEP = flag.String("ep", "", "The specific `Endpoint` to hit (overrides URL)")
     flagPort = flag.Int("p", 443, "The `Port` on which to scan")
-    flagOut = flag.String("o", "./findings/", "The `Directory` in which to put the findings")
+    flagOut = flag.String("o", "./findings", "The `Directory` in which to put the findings")
     flagC = flag.String("c", "", "The `Config File` to use")
     flagConfig = flag.String("config", "./profiles/default.cfg", "The `Config File` to use")
     flagNoScrSh = flag.Bool("disable-screenshot", false, "Disable all screenshotting functionality")
@@ -47,6 +49,14 @@ func Greeting() {
     log.Log(0, "  \\_|  \\__,_/___/___| \\_| |_/_|  \\___/ \\__,_|_| |_|\\__,_( ) \\_|   |_|_| |_|\\__,_|  \\___/ \\__,_|\\__|\n")
     log.Logf(0, "   %-53v|/\n", "")
     log.Log(0, "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n\n\n")
+}
+
+func mkdir(pathname string) {
+    if _, err := os.Stat(pathname); os.IsNotExist(err) {
+        if err = os.MkdirAll(pathname, os.FileMode(0755)); err != nil {
+            log.Errf("Failed to mkdir %v: %v", pathname, err)
+        }
+    }
 }
 
 func Loop(env *env.Env) {
@@ -83,9 +93,10 @@ func main() {
     // parse Config
     // For now...
     cfg := env.DefaultConfig()
+    cfg.FindingsDir = *flagOut
     cfg.NumWorkers = 1
     cfg.ClientCfg.MaxCalls = 1
-    cfg.ClientCfg.Slowdown = time.Second
+    cfg.ClientCfg.Slowdown = 5*time.Second
     cfg.Seclists = "/Users/jbursey/Documents/SecLists/"
 
     Greeting()
@@ -131,8 +142,13 @@ func main() {
         Target:   firstTarget.Key(),
     }
 
+    mkdir(env.Cfg.FindingsDir)
+
     var chrm *chrome.Chrome
     if !*flagNoScrSh {
+        env.Cfg.ScrShDir = filepath.Join(env.Cfg.FindingsDir, "screenshots")
+        mkdir(env.Cfg.ScrShDir)
+
         chrm = chrome.NewChrome(env)
         if chrm == nil {
             log.Err("Failed to launch Chrome!")
