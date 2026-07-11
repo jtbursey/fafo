@@ -1,4 +1,0 @@
-{
-    "DirectoryFuzzList": "/Users/jbursey/Documents/SecLists/Discovery/Web-Content/raft-medium-directories-lowercase.txt",
-    "FileFuzzList": "/Users/jbursey/Documents/SecLists/Discovery/Web-Content/raft-medium-files.txt"
-}

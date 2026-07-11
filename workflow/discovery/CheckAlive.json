@@ -26,16 +26,10 @@
                     "Values": ["200", "204", "301", "302", "307", "401"]
                 }
             ],
-            "Facts": [
-                {
-                    "Key": "IsAlive",
-                    "Value": "true"
-                },
-                {
-                    "Key": "Exists",
-                    "Value": "true"
-                }
-            ]
+            "Facts": {
+                "IsAlive": "true",
+                "Exists": "true"
+            }
         },
         "JobConditions": {
             "Conditions": [
