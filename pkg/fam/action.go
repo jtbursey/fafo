@@ -8,22 +8,22 @@ import (
 )
 
 type Payload struct {
-    Id      string              // The string to replace in the template
-    Type    fact.TargetType     // What does this payload turn the target into?
-    Pl      string              // The actual payload
+    Id      string                  // The string to replace in the template
+    Type    fact.TargetType         // What does this payload turn the target into?
+    Pl      string                  // The actual payload
 }
 
 type PayloadSet struct {
-    Id   string                 `json:"Id"`
-    Type fact.TargetType        `json:"Type"`
-    File string                 `json:"File"`
-    List []Payload              `json:"List"`
+    Id   string                     `json:"Id"`
+    Type fact.TargetType            `json:"Type"`
+    File string                     `json:"File"`
+    List []string                   `json:"List"`
 }
 
 // Describes how to make the request
 type RequestTemplate struct {
-    Method string               `json:"Method"`
-    Url    string               `json:"UrlTemplate"`
+    Method string                   `json:"Method"`
+    Url    string                   `json:"UrlTemplate"`
     //Header *HeaderTemplate
     //Body   *BodyTemplate
 }
@@ -33,14 +33,14 @@ type RequestTemplate struct {
     // If Y, push a job (mode, action, prio, target)
 type ResponseAction struct {
     // Body handler here
-    ScrShcond Fingerprint
-    Factcond  []FactConditionPair
-    Jobcond   []JobConditionPair
+    ScrShcond Fingerprint           `json:"ScreenShotConditions"`
+    Factcond  []FactConditionPair   `json:"FactConditions"`
+    Jobcond   []JobConditionPair    `json:"JobConditions"`
 }
 
 type Action struct {
-    Id      job.Action          `json:"Id"`
-    Pylds   *PayloadSet         `json:"PayloadSet"`
-    Reqt    *RequestTemplate    `json:"RequestTemplate"`
-    RespAct *ResponseAction     `json:"ResponseAction"`
+    Id      job.Action              `json:"Id"`
+    Pylds   *PayloadSet             `json:"PayloadSet"`
+    Reqt    *RequestTemplate        `json:"RequestTemplate"`
+    RespAct *ResponseAction         `json:"ResponseAction"`
 }

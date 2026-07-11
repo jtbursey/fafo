@@ -36,13 +36,13 @@ type Condition struct {
 type Fingerprint []Condition
 
 type FactConditionPair struct {
-    Fingerprint Fingerprint                            // Each condition in the fingerprint must be true
-    FactPair    map[fact.FactKey]fact.FactValue        // The resulting fact that is learned
+    Fingerprint Fingerprint                         `json:"Conditions"`
+    FactPair    map[fact.FactKey]fact.FactValue     `json:"Facts"`
 }
 
 type JobConditionPair struct {
-    Fingerprint Fingerprint
-    Jobs        []job.Job
+    Fingerprint Fingerprint                         `json:"Conditions"`
+    Jobs        []job.Job                           `json:"Jobs"`
 }
 
 func (c *Condition) Validate() bool {

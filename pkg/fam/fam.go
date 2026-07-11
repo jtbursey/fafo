@@ -100,7 +100,11 @@ func (fam *Fam) channelFile(Pylds *PayloadSet) {
 
 func (fam *Fam) channelList(Pylds *PayloadSet) {
     for _, pl := range Pylds.List {
-        fam.plch <- pl
+        fam.plch <- Payload{
+            Id:   Pylds.Id,
+            Type: Pylds.Type,
+            Pl:   pl,
+        }
     }
     fam.signal = true
 }
