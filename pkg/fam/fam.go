@@ -102,14 +102,18 @@ func (fam *Fam) channelEmptyPayload() {
 }
 
 func (fam *Fam) channelPayload(pylds *action.PayloadSet, e *env.Env) int {
-    var err error
     count := 1
     if pylds == nil { // Handle nil first to prevent issues
         fam.channelEmptyPayload()
     } else if pylds.File != "" {
-        count, err = fs.Wc(pylds.File)
+        file, err := e.Cfg.GetAsFilename(pylds.File)
         if err != nil {
-            fam.Errf("Failed to open file %v: %v\n", pylds.File, err)
+            fam.Errf("%v\n", err)
+            return -1
+        }
+        count, err = fs.Wc(file)
+        if err != nil {
+            fam.Errf("Failed to open file %v: %v\n", file, err)
             return -1
         }
         fam.wg.Go(func() {fam.channelFile(pylds, e)})

@@ -115,10 +115,6 @@ func main() {
         Target:   firstTarget.Key(),
     }
 
-    // TODO: Validate Env
-        // Check that payloads.json exists
-        // Make sure all the payload files exist
-        // Make sure each job's payload file is defined
     if err := env.Validate(); err != nil{
         log.Errf("Environment failed validation: %v\n", err)
         return

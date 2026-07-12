@@ -97,6 +97,8 @@ func (env *Env) FixPayloadFile(act *action.Action) error {
         env.Cfg.PayloadFiles[act.Pylds.File] = filename
     }
 
+    // TODO: Make sure the new file exists
+
     return nil
 }
 
@@ -107,6 +109,9 @@ func (env *Env) ValidateAction(act *action.Action) error {
             env.FixPayloadFile(act)
         }
     }
+
+    // TODO: Make sure all the new Jobs are valid actions
+
     return nil
 }
 
