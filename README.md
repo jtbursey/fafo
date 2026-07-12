@@ -7,5 +7,6 @@ make
 
 ## Usage
 ```
+./bin/configure
 ./bin/fafo -url [example.com]
 ```
