@@ -14,16 +14,15 @@ import (
 type TargetType string
 
 const (
-    TargetDomain TargetType = "Domain"        // Specifically for the base domain
+    TargetDomain TargetType = "Domain"      // Specifically for the base domain
     TargetPath   TargetType = "Path"        // Some path from the base domain
     TargetEp     TargetType = "Endpoint"    // A specific endpoint (like index.html)
 )
 
 type Target struct {
     Url     string
-    Type    TargetType
     Port    int
-    Facts   map[FactKey]FactValue            // The information we have learned
+    Facts   map[FactKey]FactValue           // The information we have learned
 }
 
 type TargetMap struct {

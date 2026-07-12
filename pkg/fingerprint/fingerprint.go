@@ -1,13 +1,13 @@
 // Joseph Bursey <jbursey@tevora.com>
 
-package fam
+package fingerprint
 
 import (
     "fmt"
     "net/http"
     "slices"
 
-    "fafo/pkg/env"
+    "fafo/pkg/config"
     "fafo/pkg/fact"
     "fafo/pkg/job"
 )
@@ -19,18 +19,17 @@ const (
     FieldStatusCode    Field = "StatusCode"
     FieldUrl           Field = "Url"
     FieldFuzzRecursive Field = "FuzzRecursive"
-    FieldTargetType    Field = "TargetType"
 
     Contains           ConditionType = "Contains"
     OneOf              ConditionType = "OneOf"
     Equals             ConditionType = "Equals"
 )
 
-// Field, Condition Type, Value(s)
+// Field, Condition Value(s)
 type Condition struct {
-    Field     Field                // The Field of request or response to check
-    Condition ConditionType        // The condition
-    Values    []string             // The values to check against
+    Field     Field                                 `json:"Field"`
+    Condition ConditionType                         `json:"Condition"`
+    Values    []string                              `json:"Values"`
 }
 
 type Fingerprint []Condition
@@ -55,16 +54,14 @@ func (c *Condition) Validate() bool {
     return len(c.Values) > 0
 }
 
-func (c *Condition) getField(resp *http.Response, req *FamRequest, base *fact.Target, env *env.Env) string {
+func (c *Condition) getField(resp *http.Response, req *http.Request, base *fact.Target, cfg *config.Config) string {
     switch c.Field {
     case FieldStatusCode:
         return fmt.Sprintf("%v", resp.StatusCode)
     case FieldUrl:
-        return fmt.Sprintf("%v", req.Req.URL.String())
+        return fmt.Sprintf("%v", req.URL.String())
     case FieldFuzzRecursive:
-        return fmt.Sprintf("%v", env.Cfg.FuzzRecursive)
-    case FieldTargetType:
-        return fmt.Sprintf("%v", req.Type)
+        return fmt.Sprintf("%v", cfg.FuzzRecursive)
     default:
         return ""
     }
@@ -81,14 +78,14 @@ func (c *Condition) doCompare(field string) bool {
     }
 }
 
-func (c *Condition) Evaluate(resp *http.Response, req *FamRequest, base *fact.Target, env *env.Env) bool {
-    field := c.getField(resp, req, base, env)
+func (c *Condition) Evaluate(resp *http.Response, req *http.Request, base *fact.Target, cfg *config.Config) bool {
+    field := c.getField(resp, req, base, cfg)
     return c.doCompare(field)
 }
 
-func (f *Fingerprint) Evaluate(resp *http.Response, req *FamRequest, base *fact.Target, env *env.Env) bool {
+func (f *Fingerprint) Evaluate(resp *http.Response, req *http.Request, base *fact.Target, cfg *config.Config) bool {
     for _, c := range *f {
-        if !c.Evaluate(resp, req, base, env) {
+        if !c.Evaluate(resp, req, base, cfg) {
             return false
         }
     }

@@ -1,0 +1,36 @@
+{
+    "Id": "FuzzFiles",
+    "Mode": "Discovery",
+    "PayloadSet": {
+        "Id": "FUZZ",
+        "File": "FileFuzzList",
+        "List": []
+    },
+    "RequestTemplate": {
+        "Method": "GET",
+        "UrlTemplate": "BASE/FUZZ"
+    },
+    "ResponseAction": {
+        "ScreenShotConditions": [
+            {
+                "Field": "StatusCode",
+                "Condition": "OneOf",
+                "Values": ["200"]
+            }
+        ],
+        "FactConditions": [
+            {
+                "Conditions": [
+                    {
+                        "Field": "StatusCode",
+                        "Condition": "OneOf",
+                        "Values": ["200", "204", "301", "302", "307", "401"]
+                    }
+                ],
+                "Facts": {
+                    "Exists": "true"
+                }
+            }
+        ]
+    }
+}

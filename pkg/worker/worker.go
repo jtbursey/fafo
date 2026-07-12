@@ -7,6 +7,7 @@ import (
 
     "fafo/pkg/env"
     "fafo/pkg/fact"
+    "fafo/pkg/fam"
     "fafo/pkg/job"
     "fafo/pkg/log"
     "fafo/pkg/pretty"
@@ -60,10 +61,17 @@ func (w *Worker) resetMode() {
     w.mode = job.ModeNone
 }
 
-func (w *Worker) dispatch(j *job.Job, t *fact.Target, e *env.Env) {
-    w.newMode(j.Mode)
-    if j.Mode == job.ModeDiscovery {
-        w.discoveryDispatch(j, t, e)
+func (w *Worker) dispatch(job *job.Job, t *fact.Target, env *env.Env) {
+    
+
+    if action, ok := env.Actions[job.Action]; ok {
+        w.newMode(action.Mode)
+        f := fam.Fam{
+            Caller: w.IdString(),
+        }
+        f.Run(t, &action, env)
+    } else {
+        w.Logf(0, "Found unimplemented Job Action: %v\n", job.Action)
     }
     w.resetMode()
 }

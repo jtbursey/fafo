@@ -24,7 +24,7 @@ import (
 type Chrome struct {
     inst          *instance
     browserCtx    context.Context
-	browserCancel context.CancelFunc
+    browserCancel context.CancelFunc
     baseTasks     chromedp.Tasks
     doneSignal    chan bool
 
@@ -38,11 +38,11 @@ type instance struct {
 }
 
 func (inst *instance) Close() {
-	inst.Cancel()
-	<-inst.Ctx.Done()
-	if inst.UserData != "" {
-		os.RemoveAll(inst.UserData)
-	}
+    inst.Cancel()
+    <-inst.Ctx.Done()
+    if inst.UserData != "" {
+        os.RemoveAll(inst.UserData)
+    }
 }
 
 func newInstance(env *env.Env) *instance {
@@ -104,10 +104,10 @@ func NewChrome(env *env.Env) *Chrome {
     browserCtx, browserCancel := chromedp.NewContext(inst.Ctx)
 
     if err := chromedp.Run(browserCtx, chromedp.ActionFunc(func(context.Context) error { return nil })); err != nil {
-		browserCancel()
-		inst.Close()
-		return nil
-	}
+        browserCancel()
+        inst.Close()
+        return nil
+    }
 
     chrome := &Chrome{
         inst:          inst,
@@ -118,10 +118,10 @@ func NewChrome(env *env.Env) *Chrome {
     }
 
     chrome.baseTasks = chromedp.Tasks{
-		network.Enable(),
-	}
+        network.Enable(),
+    }
 
-	return chrome
+    return chrome
 }
 
 func (c *Chrome) prefix() string {

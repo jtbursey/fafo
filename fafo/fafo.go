@@ -7,11 +7,12 @@ import (
     "flag"
     "fmt"
     "net/http"
-    "os"
 
     "fafo/pkg/chrome"
+    "fafo/pkg/config"
     "fafo/pkg/env"
     "fafo/pkg/fact"
+    "fafo/pkg/fs"
     "fafo/pkg/httpclient"
     "fafo/pkg/job"
     "fafo/pkg/log"
@@ -24,39 +25,11 @@ var (
     flagURL = flag.String("url", "", "The base `URL` (domain) to hit")
     flagEP = flag.String("ep", "", "The specific `Endpoint` to hit (overrides URL)")
     flagPort = flag.Int("p", 443, "The `Port` on which to scan")
-    flagOut = flag.String("o", env.DefaultFindingsDir, "The `Directory` in which to put the findings")
+    flagOut = flag.String("o", config.DefaultFindingsDir, "The `Directory` in which to put the findings")
     flagC = flag.String("c", "", "The `Config File` to use")
-    flagConfig = flag.String("config", env.DefaultConfigFile, "The `Config File` to use")
+    flagConfig = flag.String("config", config.DefaultConfigFile, "The `Config File` to use")
     flagNoScrSh = flag.Bool("disable-screenshot", false, "Disable all screenshotting functionality")
 )
-
-func Greeting() {
-// ______                ___                            _    ______ _           _   _____       _
-// |  ___|              / _ \                          | |   |  ___(_)         | | |  _  |     | |
-// | |_ _   _ ________ / /_\ \_ __ ___  _   _ _ __   __| |   | |_   _ _ __   __| | | | | |_   _| |_
-// |  _| | | |_  /_  / |  _  | '__/ _ \| | | | '_ \ / _` |   |  _| | | '_ \ / _` | | | | | | | | __|
-// | | | |_| |/ / / /  | | | | | | (_) | |_| | | | | (_| |_  | |   | | | | | (_| | \ \_/ / |_| | |_
-// \_|  \__,_/___/___| \_| |_/_|  \___/ \__,_|_| |_|\__,_( ) \_|   |_|_| |_|\__,_|  \___/ \__,_|\__|
-//                                                       |/
-
-    log.Log(0, "\n\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n")
-    log.Log(0, "  ______                ___                            _    ______ _           _   _____       _\n")
-    log.Log(0, "  |  ___|              / _ \\                          | |   |  ___(_)         | | |  _  |     | |\n")
-    log.Log(0, "  | |_ _   _ ________ / /_\\ \\_ __ ___  _   _ _ __   __| |   | |_   _ _ __   __| | | | | |_   _| |_\n")
-    log.Log(0, "  |  _| | | |_  /_  / |  _  | '__/ _ \\| | | | '_ \\ / _` |   |  _| | | '_ \\ / _` | | | | | | | | __|\n")
-    log.Log(0, "  | | | |_| |/ / / /  | | | | | | (_) | |_| | | | | (_| |_  | |   | | | | | (_| | \\ \\_/ / |_| | |_\n")
-    log.Log(0, "  \\_|  \\__,_/___/___| \\_| |_/_|  \\___/ \\__,_|_| |_|\\__,_( ) \\_|   |_|_| |_|\\__,_|  \\___/ \\__,_|\\__|\n")
-    log.Logf(0, "   %-53v|/\n", "")
-    log.Log(0, "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n\n")
-}
-
-func mkdir(pathname string) {
-    if _, err := os.Stat(pathname); os.IsNotExist(err) {
-        if err = os.MkdirAll(pathname, os.FileMode(0755)); err != nil {
-            log.Errf("Failed to mkdir %v: %v", pathname, err)
-        }
-    }
-}
 
 func Loop(env *env.Env) {
     prefix := ""
@@ -68,7 +41,7 @@ func Loop(env *env.Env) {
         case t := <- env.FactCh:
             t.PrintFacts(1, prefix)
             env.Targets.Push(t)
-            // TODO: Output the existing URLs
+            // TODO: Output the existing URLs to findings dir
         case j := <- env.JobCh:
             env.Jobqueue.Push(j)
         default:
@@ -89,20 +62,19 @@ func main() {
         return
     }
 
-    cfg := env.DefaultConfig()
-    var configFile string
+    cfg := config.DefaultConfig()
     if *flagC != "" {
-        configFile = *flagC
+        cfg.SelfFile = *flagC
     } else {
-        configFile = *flagConfig
+        cfg.SelfFile = *flagConfig
     }
     
-    if err := cfg.Parse(configFile); err != nil {
+    if err := cfg.Parse(); err != nil {
         return
     }
     cfg.FindingsDir = *flagOut
 
-    Greeting()
+    log.Greeting("By Ocelot")
 
     jq := &job.JobQueue{}
     jq.Init()
@@ -118,6 +90,10 @@ func main() {
         FactCh:   make(chan fact.Target, 10),
     }
 
+    if err := env.ParseActions(); err != nil {
+        return
+    }
+
     // Define the top-level target
     firstTarget := &fact.Target{
         Port:  *flagPort,
@@ -125,10 +101,8 @@ func main() {
     }
     if *flagEP != "" {
         firstTarget.Url = *flagEP
-        firstTarget.Type = fact.TargetEp
     } else {
         firstTarget.Url = *flagURL
-        firstTarget.Type = fact.TargetDomain
     }
     env.FirstTarget = *firstTarget
     env.Targets.Push(*firstTarget)
@@ -136,19 +110,34 @@ func main() {
     // Create the first discovery job
     firstJob := job.Job{
         Mode:     job.ModeDiscovery,
-        Action:   worker.ActionCheckAlive,
+        Action:   "CheckAlive",
         Priority: 5,
         Target:   firstTarget.Key(),
     }
 
+    // TODO: Validate Env
+        // Check that payloads.json exists
+        // Make sure all the payload files exist
+        // Make sure each job's payload file is defined
+    if err := env.Validate(); err != nil{
+        log.Errf("Environment failed validation: %v\n", err)
+        return
+    }
+
     env.Debug()
 
-    mkdir(env.Cfg.FindingsDir)
+    if err := fs.Mkdir(env.Cfg.FindingsDir); err != nil {
+        log.Errf("Failed to create directory %v: %v\n", env.Cfg.FindingsDir, err)
+        return
+    }
 
     var chrm *chrome.Chrome
     if !*flagNoScrSh {
         env.Cfg.ScrShDir = filepath.Join(env.Cfg.FindingsDir, "screenshots")
-        mkdir(env.Cfg.ScrShDir)
+        if err := fs.Mkdir(env.Cfg.ScrShDir); err != nil {
+            log.Errf("Failed to mkdir %v: %v", env.Cfg.ScrShDir, err)
+            return
+        }
 
         chrm = chrome.NewChrome(env)
         if chrm == nil {
@@ -170,6 +159,7 @@ func main() {
     env.Jobqueue.Push(firstJob)
     Loop(env)
 
+    // This doesn't actually do much does it.
     chrm.SignalDone()
 
     // TODO: Findings to output dir

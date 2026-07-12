@@ -1,5 +1,6 @@
 bin/
 profiles/*.cfg
+workflow/payloads.json
 .DS_Store
 *.jpeg
 findings/

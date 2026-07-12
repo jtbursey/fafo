@@ -18,11 +18,9 @@ const (
     ModeAttack    WorkerMode = "Attack"
 )
 
-type Action string
-
 type Job struct {
     Mode     WorkerMode
-    Action   Action
+    Action   string
     Priority int
     index    int
     Target   string

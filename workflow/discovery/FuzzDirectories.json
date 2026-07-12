@@ -1,9 +1,14 @@
 {
-    "Id": "CheckAlive",
+    "Id": "FuzzDirectories",
     "Mode": "Discovery",
+    "PayloadSet": {
+        "Id": "FUZZ",
+        "File": "DirectoryFuzzList",
+        "List": []
+    },
     "RequestTemplate": {
         "Method": "GET",
-        "UrlTemplate": "BASE"
+        "UrlTemplate": "BASE/FUZZ"
     },
     "ResponseAction": {
         "ScreenShotConditions": [
@@ -23,7 +28,6 @@
                     }
                 ],
                 "Facts": {
-                    "IsAlive": "true",
                     "Exists": "true"
                 }
             }
