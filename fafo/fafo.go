@@ -117,7 +117,7 @@ func main() {
     // Create the first discovery job
     firstJob := job.Job{
         Mode:     job.ModeDiscovery,
-        Action:   "CheckAlive",
+        Action:   *flagAction,
         Priority: 5,
         Target:   firstTarget.Key(),
     }
