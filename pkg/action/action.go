@@ -25,8 +25,9 @@ type PayloadSet struct {
 
 // Describes how to make the request
 type RequestTemplate struct {
-    Method string                             `json:"Method"`
-    Url    string                             `json:"UrlTemplate"`
+    Method    string                          `json:"Method"`
+    Url       string                          `json:"UrlTemplate"`
+    UserAgent string                          `json:"UserAgent"`
     //Header *HeaderTemplate
     //Body   *BodyTemplate
 }

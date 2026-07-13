@@ -5,22 +5,23 @@
 package fam
 
 import (
-    "bufio"
-    "fmt"
-    "io"
-    "net/http"
-    "os"
-    "slices"
-    "strings"
-    "sync"
+	"bufio"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"slices"
+	"strings"
+	"sync"
 
-    "fafo/pkg/action"
-    "fafo/pkg/env"
-    "fafo/pkg/fact"
-    "fafo/pkg/fs"
-    "fafo/pkg/job"
-    "fafo/pkg/log"
-    "fafo/pkg/pretty"
+	"fafo/pkg/action"
+	"fafo/pkg/env"
+	"fafo/pkg/fact"
+	"fafo/pkg/fs"
+	"fafo/pkg/httpclient"
+	"fafo/pkg/job"
+	"fafo/pkg/log"
+	"fafo/pkg/pretty"
 )
 
 var (
@@ -154,14 +155,26 @@ func (fam *Fam) buildBodyReader(pyld *action.Payload, base *fact.Target, reqt *a
     return nil
 }
 
+func (fam *Fam) setUserAgent(pyld *action.Payload, reqt *action.RequestTemplate, req *http.Request, cfg *httpclient.HttpCfg) {
+    var ua string
+    if len(reqt.UserAgent) == 0 || reqt.UserAgent == "DEFAULT" {
+        ua = cfg.UserAgent
+    } else if len(pyld.Id) > 0 && strings.Contains(reqt.UserAgent, pyld.Id) {
+        ua = strings.ReplaceAll(reqt.UserAgent, pyld.Id, pyld.Pl)
+    }
+    req.Header.Set("User-Agent", ua)
+}
+
 // For now the request is simple. No need for much
-func (fam *Fam) buildRequest(pyld *action.Payload, base *fact.Target, reqt *action.RequestTemplate) *http.Request {
+func (fam *Fam) buildRequest(pyld *action.Payload, base *fact.Target, reqt *action.RequestTemplate, env *env.Env) *http.Request {
     url := fam.buildUrl(pyld, base, reqt)
     req, _ := http.NewRequest(fam.buildMethod(pyld, reqt), url, fam.buildBodyReader(pyld, base, reqt))
     if req == nil {
         fam.Errf("Failed to build request for %v (Base: %v)\n", url)
         return nil
     }
+
+    fam.setUserAgent(pyld, reqt, req, &env.Cfg.ClientCfg)
     return req
 }
 
@@ -231,7 +244,7 @@ func (fam *Fam) handleResponse(resp *http.Response, req *http.Request, base *fac
 }
 
 func (fam *Fam) handlePayload(pyld *action.Payload, base *fact.Target, action *action.Action, env *env.Env) {
-    req := fam.buildRequest(pyld, base, action.Reqt)
+    req := fam.buildRequest(pyld, base, action.Reqt, env)
     if req == nil {
         return
     }
