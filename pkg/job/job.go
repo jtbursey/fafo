@@ -33,6 +33,7 @@ type JobQueue struct {
 }
 
 func (jq *JobQueue) Init() {
+    jq.mtx = &sync.Mutex{}
     jq.mtx.Lock()
     defer jq.mtx.Unlock()
     jq.queue = make([]Job, 0)
