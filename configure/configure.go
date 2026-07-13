@@ -3,11 +3,11 @@
 package main
 
 import (
-	"flag"
+    "flag"
 
-	"fafo/pkg/config"
-	"fafo/pkg/env"
-	"fafo/pkg/log"
+    "fafo/pkg/config"
+    "fafo/pkg/env"
+    "fafo/pkg/log"
 )
 
 var (

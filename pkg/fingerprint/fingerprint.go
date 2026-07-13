@@ -19,6 +19,7 @@ const (
     FieldStatusCode    Field = "StatusCode"
     FieldUrl           Field = "Url"
     FieldFuzzRecursive Field = "FuzzRecursive"
+    FieldTautology     Field = "Tautology"
 
     Contains           ConditionType = "Contains"
     OneOf              ConditionType = "OneOf"
@@ -62,6 +63,8 @@ func (c *Condition) getField(resp *http.Response, req *http.Request, base *fact.
         return fmt.Sprintf("%v", req.URL.String())
     case FieldFuzzRecursive:
         return fmt.Sprintf("%v", cfg.FuzzRecursive)
+    case FieldTautology:
+        return "true"
     default:
         return ""
     }

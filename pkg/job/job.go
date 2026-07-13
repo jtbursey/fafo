@@ -3,10 +3,10 @@
 package job
 
 import (
-	"container/heap"
-	"sync"
+    "container/heap"
+    "sync"
 
-	"fafo/pkg/log"
+    "fafo/pkg/log"
 )
 
 type WorkerMode string

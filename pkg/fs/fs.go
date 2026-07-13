@@ -3,11 +3,11 @@
 package fs
 
 import (
-	"bufio"
-	"os"
-	"strings"
+    "bufio"
+    "os"
+    "strings"
 
-	"fafo/pkg/log"
+    "fafo/pkg/log"
 )
 
 func Exists(pathname string) bool {

@@ -3,19 +3,19 @@
 package env
 
 import (
-	"fmt"
-	"net/http"
-	"os"
-	"path/filepath"
+    "fmt"
+    "net/http"
+    "os"
+    "path/filepath"
 
-	"fafo/pkg/action"
-	"fafo/pkg/config"
-	"fafo/pkg/fact"
-	"fafo/pkg/fs"
-	"fafo/pkg/httpclient"
-	"fafo/pkg/job"
-	"fafo/pkg/log"
-	"fafo/pkg/pretty"
+    "fafo/pkg/action"
+    "fafo/pkg/config"
+    "fafo/pkg/fact"
+    "fafo/pkg/fs"
+    "fafo/pkg/httpclient"
+    "fafo/pkg/job"
+    "fafo/pkg/log"
+    "fafo/pkg/pretty"
 )
 
 const (

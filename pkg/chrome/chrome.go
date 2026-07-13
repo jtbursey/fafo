@@ -3,22 +3,22 @@
 package chrome
 
 import (
-	"context"
-	"fmt"
-	"net/http"
-	"os"
-	"path/filepath"
-	"strings"
-	"time"
-	"unicode"
+    "context"
+    "fmt"
+    "net/http"
+    "os"
+    "path/filepath"
+    "strings"
+    "time"
+    "unicode"
 
-	"github.com/chromedp/cdproto/network"
-	"github.com/chromedp/cdproto/page"
-	"github.com/chromedp/chromedp"
+    "github.com/chromedp/cdproto/network"
+    "github.com/chromedp/cdproto/page"
+    "github.com/chromedp/chromedp"
 
-	"fafo/pkg/env"
-	"fafo/pkg/log"
-	"fafo/pkg/pretty"
+    "fafo/pkg/env"
+    "fafo/pkg/log"
+    "fafo/pkg/pretty"
 )
 
 type Chrome struct {

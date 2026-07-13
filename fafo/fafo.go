@@ -3,21 +3,25 @@
 package main
 
 import (
-	"flag"
-	"fmt"
-	"net/http"
-	"path/filepath"
+    "flag"
+    "fmt"
+    "net/http"
+    "path/filepath"
 
-	"fafo/pkg/chrome"
-	"fafo/pkg/config"
-	"fafo/pkg/env"
-	"fafo/pkg/fact"
-	"fafo/pkg/fs"
-	"fafo/pkg/httpclient"
-	"fafo/pkg/job"
-	"fafo/pkg/log"
-	"fafo/pkg/pretty"
-	"fafo/pkg/worker"
+    "fafo/pkg/chrome"
+    "fafo/pkg/config"
+    "fafo/pkg/env"
+    "fafo/pkg/fact"
+    "fafo/pkg/fs"
+    "fafo/pkg/httpclient"
+    "fafo/pkg/job"
+    "fafo/pkg/log"
+    "fafo/pkg/pretty"
+    "fafo/pkg/worker"
+)
+
+const (
+    DefaultAction string = "PreFuzz"
 )
 
 // Define the command line args here
@@ -29,6 +33,7 @@ var (
     flagC       = flag.String("c", "", "The `Config File` to use")
     flagConfig  = flag.String("config", config.DefaultConfigFile, "The `Config File` to use")
     flagNoScrSh = flag.Bool("disable-screenshot", false, "Disable all screenshotting functionality")
+    flagAction  = flag.String("a", DefaultAction, "The first `Action` to carry out")
 )
 
 func Loop(env *env.Env) {
