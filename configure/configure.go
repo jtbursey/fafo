@@ -3,11 +3,11 @@
 package main
 
 import (
-    "flag"
+	"flag"
 
-    "fafo/pkg/config"
-    "fafo/pkg/env"
-    "fafo/pkg/log"
+	"fafo/pkg/config"
+	"fafo/pkg/env"
+	"fafo/pkg/log"
 )
 
 var (
@@ -17,6 +17,7 @@ var (
 
 func main() {
     log.SetVerb(2)
+    flag.Parse()
 
     log.Greeting("Configuring...")
 
