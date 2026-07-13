@@ -1,0 +1,35 @@
+{
+    "Id": "CheckAlive",
+    "Mode": "Discovery",
+    "RequestTemplate": {
+        "Method": "GET",
+        "UrlTemplate": "BASE",
+        "Header": {
+            "User-Agent": "DEFAULT"
+        }
+    },
+    "ResponseAction": {
+        "ScreenShotConditions": [
+            {
+                "Field": "StatusCode",
+                "Condition": "OneOf",
+                "Values": ["200"]
+            }
+        ],
+        "FactConditions": [
+            {
+                "Conditions": [
+                    {
+                        "Field": "StatusCode",
+                        "Condition": "OneOf",
+                        "Values": ["200", "204", "301", "302", "307", "401"]
+                    }
+                ],
+                "Facts": {
+                    "IsAlive": "true",
+                    "Exists": "true"
+                }
+            }
+        ]
+    }
+}

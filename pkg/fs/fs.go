@@ -4,6 +4,7 @@ package fs
 
 import (
     "bufio"
+    "path/filepath"
     "os"
     "strings"
 
@@ -58,5 +59,11 @@ func GetFileFromStdio(msg string) string {
             log.Logf(0, "File/directory \"%v\" does not exist! Try again?\n", filename)
         }
     }
+    return filename
+}
+
+func BasicFilename(filename string) string {
+    filename = filepath.Base(filename)
+    filename = strings.TrimSuffix(filename, filepath.Ext(filename))
     return filename
 }

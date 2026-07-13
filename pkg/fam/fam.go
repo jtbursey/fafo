@@ -127,12 +127,15 @@ func (fam *Fam) channelPayload(pylds *action.PayloadSet, e *env.Env) int {
     return count
 }
 
-func (fam *Fam) buildMethod(pyld *action.Payload, reqt *action.RequestTemplate) string {
-    method := reqt.Method
-    if len(pyld.Id) > 0 && strings.Contains(method, pyld.Id) {
-        strings.ReplaceAll(method, pyld.Id, pyld.Pl)
+func (fam *Fam) payloadReplace(pyld *action.Payload, origin string) string {
+    if len(pyld.Id) > 0 && strings.Contains(origin, pyld.Id) {
+        strings.ReplaceAll(origin, pyld.Id, pyld.Pl)
     }
-    return method
+    return origin
+}
+
+func (fam *Fam) buildMethod(pyld *action.Payload, reqt *action.RequestTemplate) string {
+    return fam.payloadReplace(pyld, reqt.Method)
 }
 
 func (fam *Fam) buildUrl(pyld *action.Payload, base *fact.Target, reqt *action.RequestTemplate) string {
@@ -144,25 +147,29 @@ func (fam *Fam) buildUrl(pyld *action.Payload, base *fact.Target, reqt *action.R
         return ""
     }
 
-    if len(pyld.Id) > 0 && strings.Contains(url, pyld.Id) {
-        url = strings.ReplaceAll(url, pyld.Id, pyld.Pl)
-    }
-
-    return url
+    return fam.payloadReplace(pyld, url)
 }
 
 func (fam *Fam) buildBodyReader(pyld *action.Payload, base *fact.Target, reqt *action.RequestTemplate) io.Reader {
     return nil
 }
 
-func (fam *Fam) setUserAgent(pyld *action.Payload, reqt *action.RequestTemplate, req *http.Request, cfg *httpclient.HttpCfg) {
-    var ua string
-    if len(reqt.UserAgent) == 0 || reqt.UserAgent == "DEFAULT" {
-        ua = cfg.UserAgent
-    } else if len(pyld.Id) > 0 && strings.Contains(reqt.UserAgent, pyld.Id) {
-        ua = strings.ReplaceAll(reqt.UserAgent, pyld.Id, pyld.Pl)
+func (fam *Fam) buildHeader(pyld *action.Payload, reqt *action.RequestTemplate, cfg *httpclient.HttpCfg) map[string][]string {
+    header := make(map[string][]string)
+    for hdr, val := range reqt.Header {
+        if hdr == "User-Agent" && val == "DEFAULT" {
+            header["User-Agent"] = []string{cfg.UserAgent}
+            continue
+        }
+
+        header[hdr] = append(header[hdr], fam.payloadReplace(pyld, val))
     }
-    req.Header.Set("User-Agent", ua)
+
+    if reqt.Header == nil || reqt.Header["User-Agent"] == "" {
+        header["User-Agent"] = []string{cfg.UserAgent}
+    }
+
+    return header
 }
 
 // For now the request is simple. No need for much
@@ -174,7 +181,7 @@ func (fam *Fam) buildRequest(pyld *action.Payload, base *fact.Target, reqt *acti
         return nil
     }
 
-    fam.setUserAgent(pyld, reqt, req, &env.Cfg.ClientCfg)
+    req.Header = fam.buildHeader(pyld, reqt, &env.Cfg.ClientCfg)
     return req
 }
 

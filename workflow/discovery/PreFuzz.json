@@ -3,7 +3,10 @@
     "Mode": "Discovery",
     "RequestTemplate": {
         "Method": "GET",
-        "UrlTemplate": "BASE"
+        "UrlTemplate": "BASE",
+        "Header": {
+            "User-Agent": "DEFAULT"
+        }
     },
     "ResponseAction": {
         "ScreenShotConditions": [

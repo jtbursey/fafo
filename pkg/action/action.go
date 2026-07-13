@@ -27,8 +27,7 @@ type PayloadSet struct {
 type RequestTemplate struct {
     Method    string                          `json:"Method"`
     Url       string                          `json:"UrlTemplate"`
-    UserAgent string                          `json:"UserAgent"`
-    //Header *HeaderTemplate
+    Header    map[string]string               `json:"Header"`
     //Body   *BodyTemplate
 }
 
@@ -66,6 +65,10 @@ func Parse(filename string) (*Action, error) {
     err = json.Unmarshal(data, act)
     if err != nil {
         return nil, err
+    }
+
+    if len(act.Id) == 0 {
+        act.Id = fs.BasicFilename(filename)
     }
 
     return act, nil
