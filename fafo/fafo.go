@@ -6,6 +6,7 @@ import (
     "flag"
     "fmt"
     "net/http"
+    "net/url"
     "path/filepath"
 
     "fafo/pkg/chrome"
@@ -29,6 +30,7 @@ var (
     flagURL     = flag.String("url", "", "The base `URL` (domain) to hit")
     flagEP      = flag.String("ep", "", "The specific `Endpoint` to hit (overrides URL)")
     flagPort    = flag.Int("p", 443, "The `Port` on which to scan")
+    flagProxy   = flag.String("proxy", "", "The http `Proxy` server to proxy through")
     flagOut     = flag.String("o", config.DefaultFindingsDir, "The `Directory` in which to put the findings")
     flagC       = flag.String("c", "", "The `Config File` to use")
     flagConfig  = flag.String("config", config.DefaultConfigFile, "The `Config File` to use")
@@ -82,6 +84,12 @@ func main() {
         return
     }
     cfg.FindingsDir = *flagOut
+    if proxy, err := url.Parse(*flagProxy); err != nil {
+        log.Errf("Failed to parse Proxy URL: %v\n", *flagProxy)
+        return
+    } else {
+        cfg.ClientCfg.Proxy = proxy
+    }
 
     log.Greeting("By Ocelot")
 

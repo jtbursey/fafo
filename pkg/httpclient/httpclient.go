@@ -3,8 +3,10 @@
 package httpclient
 
 import (
+    "crypto/tls"
     "fmt"
     "net/http"
+    "net/url"
     "time"
 
     "fafo/pkg/log"
@@ -14,6 +16,7 @@ import (
 
 type HttpCfg struct {
     UserAgent  string        `json:"UserAgent"`
+    Proxy      *url.URL      `json:"Proxy"`
     MaxCalls   int           `json:"MaxCalls"`
     doRedirect bool          `json:"FollowRedirects"`
     Redirect   func(req *http.Request, via []*http.Request) error
@@ -54,7 +57,7 @@ func DefaultConfig() *HttpCfg {
 }
 
 func New(cfg HttpCfg) *HttpClient {
-    return &HttpClient{
+    client := &HttpClient{
         client:   http.Client{
             CheckRedirect: cfg.Redirect,
             Timeout:       cfg.Timeout,
@@ -62,6 +65,17 @@ func New(cfg HttpCfg) *HttpClient {
         sem:      *semaphore.New(cfg.MaxCalls),
         slowdown: cfg.Slowdown,
     }
+
+    if cfg.Proxy.String() != "" {
+        client.client.Transport = &http.Transport{
+            Proxy: http.ProxyURL(cfg.Proxy),
+            TLSClientConfig: &tls.Config{
+                InsecureSkipVerify: true,
+            },
+        }
+    }
+
+    return client
 }
 
 func (c *HttpCfg) PostParse() {
