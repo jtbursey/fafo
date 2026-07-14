@@ -36,22 +36,24 @@ var (
     flagAction  = flag.String("a", DefaultAction, "The first `Action` to carry out")
 )
 
-func Loop(env *env.Env) {
-    prefix := ""
+func mgrPrefix() string {
     if log.Verb(3) {
-        prefix = fmt.Sprintf("%*s", pretty.PrefixWidth, "[Manager]: ")
+        return fmt.Sprintf("%*s", pretty.PrefixWidth, "[Manager]: ")
     }
+    return ""
+}
+
+func Loop(env *env.Env) {
     for {
         select {
         case t := <-env.FactCh:
-            t.PrintFacts(1, prefix)
+            t.PrintFacts(1, mgrPrefix())
             env.Targets.Push(t)
             // TODO: Output the existing URLs to findings dir
         case j := <-env.JobCh:
             env.Jobqueue.Push(j)
         default:
             if env.Jobqueue.Done() && len(env.FactCh) == 0 && len(env.JobCh) == 0 {
-                log.Logf(0, "%vAll jobs completed.\n", prefix)
                 return
             }
         }
@@ -161,9 +163,9 @@ func main() {
     // This kicks everything off
     env.Jobqueue.Push(firstJob)
     Loop(env)
-
-    // This doesn't actually do much does it.
     chrm.SignalDone()
+    log.Logf(0, "%vAll jobs completed.\n", mgrPrefix())
+
 
     // TODO: Findings to output dir
     env.Targets.PrintFindings()
