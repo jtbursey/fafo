@@ -19,6 +19,7 @@ const (
     FieldStatusCode    Field = "StatusCode"
     FieldUrl           Field = "Url"
     FieldFuzzRecursive Field = "FuzzRecursive"
+    FieldHdrLocation   Field = "HdrLocation"
     FieldTautology     Field = "Tautology"
 
     Contains           ConditionType = "Contains"
@@ -45,6 +46,23 @@ type JobConditionPair struct {
     Jobs        []job.Job                           `json:"Jobs"`
 }
 
+func (f Field) Get(resp *http.Response, req *http.Request, base *fact.Target, cfg *config.Config) (string, error) {
+    switch f {
+    case FieldStatusCode:
+        return fmt.Sprintf("%v", resp.StatusCode), nil
+    case FieldUrl:
+        return fmt.Sprintf("%v", req.URL.String()), nil
+    case FieldFuzzRecursive:
+        return fmt.Sprintf("%v", cfg.FuzzRecursive), nil
+    case FieldHdrLocation:
+        return resp.Header["Location"][0], nil
+    case FieldTautology:
+        return "true", nil
+    default:
+        return "", fmt.Errorf("Tried to Get unimplemented Field %v", f)
+    }
+}
+
 func (c *Condition) Validate() bool {
     switch c.Condition {
     case Contains:
@@ -53,21 +71,6 @@ func (c *Condition) Validate() bool {
         return len(c.Values) == 1
     }
     return len(c.Values) > 0
-}
-
-func (c *Condition) getField(resp *http.Response, req *http.Request, base *fact.Target, cfg *config.Config) string {
-    switch c.Field {
-    case FieldStatusCode:
-        return fmt.Sprintf("%v", resp.StatusCode)
-    case FieldUrl:
-        return fmt.Sprintf("%v", req.URL.String())
-    case FieldFuzzRecursive:
-        return fmt.Sprintf("%v", cfg.FuzzRecursive)
-    case FieldTautology:
-        return "true"
-    default:
-        return ""
-    }
 }
 
 func (c *Condition) doCompare(field string) bool {
@@ -81,16 +84,22 @@ func (c *Condition) doCompare(field string) bool {
     }
 }
 
-func (c *Condition) Evaluate(resp *http.Response, req *http.Request, base *fact.Target, cfg *config.Config) bool {
-    field := c.getField(resp, req, base, cfg)
-    return c.doCompare(field)
+func (c *Condition) Evaluate(resp *http.Response, req *http.Request, base *fact.Target, cfg *config.Config) (bool, error) {
+    field, err := c.Field.Get(resp, req, base, cfg)
+    if err != nil {
+        return false, err
+    }
+    return c.doCompare(field), nil
 }
 
-func (f *Fingerprint) Evaluate(resp *http.Response, req *http.Request, base *fact.Target, cfg *config.Config) bool {
+func (f *Fingerprint) Evaluate(resp *http.Response, req *http.Request, base *fact.Target, cfg *config.Config) (bool, error) {
     for _, c := range *f {
-        if !c.Evaluate(resp, req, base, cfg) {
-            return false
+        res, err := c.Evaluate(resp, req, base, cfg)
+        if !res {
+            return false, err
+        } else {
+            return true, err
         }
     }
-    return true
+    return true, nil
 }

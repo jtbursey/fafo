@@ -29,6 +29,18 @@
                     "IsAlive": "true",
                     "Exists": "true"
                 }
+            },
+            {
+                "Conditions": [
+                    {
+                        "Field": "StatusCode",
+                        "Condition": "OneOf",
+                        "Values": ["301", "302", "303", "307", "308"]
+                    }
+                ],
+                "Facts": {
+                    "Redirects": "HdrLocation"
+                }
             }
         ]
     }

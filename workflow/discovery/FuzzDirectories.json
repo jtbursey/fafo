@@ -30,6 +30,18 @@
                 "Facts": {
                     "Exists": "true"
                 }
+            },
+            {
+                "Conditions": [
+                    {
+                        "Field": "StatusCode",
+                        "Condition": "OneOf",
+                        "Values": ["301", "302", "303", "307", "308"]
+                    }
+                ],
+                "Facts": {
+                    "Redirects": "HdrLocation"
+                }
             }
         ],
         "JobConditions": [
@@ -38,7 +50,7 @@
                     {
                         "Field": "StatusCode",
                         "Condition": "OneOf",
-                        "Values": ["200", "204", "301", "302", "307", "401"]
+                        "Values": ["200", "204", "302", "401"]
                     },
                     {
                         "Field": "FuzzRecursive",

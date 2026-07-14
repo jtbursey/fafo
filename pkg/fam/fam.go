@@ -17,6 +17,7 @@ import (
 	"fafo/pkg/action"
 	"fafo/pkg/env"
 	"fafo/pkg/fact"
+    "fafo/pkg/fingerprint"
 	"fafo/pkg/fs"
 	"fafo/pkg/httpclient"
 	"fafo/pkg/job"
@@ -216,7 +217,11 @@ func (fam *Fam) handleResponse(resp *http.Response, req *http.Request, base *fac
     }
 
     if !env.Cfg.DisableScreenShot && respAct.ScrShcond != nil {
-        if respAct.ScrShcond.Evaluate(resp, req, base, &env.Cfg) {
+        b, err := respAct.ScrShcond.Evaluate(resp, req, base, &env.Cfg)
+        if err != nil {
+            fam.Errf("Failed to evaluation Screenshot condition: %v", err)
+        }
+        if b {
             env.ScrShCh <- *resp.Request
         }
     }
@@ -229,9 +234,18 @@ func (fam *Fam) handleResponse(resp *http.Response, req *http.Request, base *fac
 
     // Push Facts
     for _, pair := range respAct.Factcond {
-        if pair.Fingerprint.Evaluate(resp, req, base, &env.Cfg) {
+        b, err := pair.Fingerprint.Evaluate(resp, req, base, &env.Cfg)
+        if err != nil {
+            fam.Errf("Failed to evaluation Fact condition: %v", err)
+        }
+        if b {
             for key, value := range pair.FactPair {
-                res.Facts[key] = value
+                if val, err := fingerprint.Field(value).Get(resp, req, base, &env.Cfg); err == nil {
+                    res.Facts[key] = fact.FactValue(val)
+                    continue
+                } else {
+                    res.Facts[key] = value
+                }
             }
         }
     }
@@ -242,7 +256,11 @@ func (fam *Fam) handleResponse(resp *http.Response, req *http.Request, base *fac
 
     // Push Jobs
     for _, pair := range respAct.Jobcond {
-        if pair.Fingerprint.Evaluate(resp, req, base, &env.Cfg) {
+        b, err := pair.Fingerprint.Evaluate(resp, req, base, &env.Cfg)
+        if err != nil {
+            fam.Errf("Failed to evaluation Fact condition: %v", err)
+        }
+        if b {
             for _, j := range pair.Jobs {
                 env.JobCh <- fam.buildJob(&j, &res)
             }
