@@ -55,5 +55,6 @@ func main() {
         log.Log(0, "Configuration Failed.\n")
         return
     }
+    log.Logf(0, "Payloads written to %v\n", env.Cfg.PayloadSrc)
     log.Log(0, "Configured.\n")
 }
