@@ -84,12 +84,15 @@ func main() {
         return
     }
     cfg.FindingsDir = *flagOut
-    if proxy, err := url.Parse(*flagProxy); err != nil {
-        log.Errf("Failed to parse Proxy URL: %v\n", *flagProxy)
-        return
-    } else {
-        cfg.ClientCfg.Proxy = proxy
+    if *flagProxy != "" {
+        if proxy, err := url.Parse(*flagProxy); err != nil {
+            log.Errf("Failed to parse Proxy URL: %v\n", *flagProxy)
+            return
+        } else {
+            cfg.ClientCfg.Proxy = proxy
+        }
     }
+    
 
     log.Greeting("By Ocelot")
 

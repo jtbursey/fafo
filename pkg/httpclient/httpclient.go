@@ -16,7 +16,8 @@ import (
 
 type HttpCfg struct {
     UserAgent  string        `json:"UserAgent"`
-    Proxy      *url.URL      `json:"Proxy"`
+    // TODO: Figure out a way to unmarshall json to url
+    Proxy      *url.URL
     MaxCalls   int           `json:"MaxCalls"`
     doRedirect bool          `json:"FollowRedirects"`
     Redirect   func(req *http.Request, via []*http.Request) error
@@ -56,28 +57,6 @@ func DefaultConfig() *HttpCfg {
     }
 }
 
-func New(cfg HttpCfg) *HttpClient {
-    client := &HttpClient{
-        client:   http.Client{
-            CheckRedirect: cfg.Redirect,
-            Timeout:       cfg.Timeout,
-        },
-        sem:      *semaphore.New(cfg.MaxCalls),
-        slowdown: cfg.Slowdown,
-    }
-
-    if cfg.Proxy.String() != "" {
-        client.client.Transport = &http.Transport{
-            Proxy: http.ProxyURL(cfg.Proxy),
-            TLSClientConfig: &tls.Config{
-                InsecureSkipVerify: true,
-            },
-        }
-    }
-
-    return client
-}
-
 func (c *HttpCfg) PostParse() {
     if !c.doRedirect {
         c.Redirect = func(req *http.Request, via []*http.Request) error { return http.ErrUseLastResponse }
@@ -88,11 +67,36 @@ func (c *HttpCfg) PostParse() {
 }
 
 func (c *HttpCfg) Debug() {
+    if c.Proxy != nil {
+        log.Logf(0, "%v\n", pretty.Config("Proxy", c.Proxy.String()))
+    }
     log.Logf(0, "%v\n", pretty.Config("MaxCalls", c.MaxCalls))
     log.Logf(0, "%v\n", pretty.Config("Slowdown", c.Slowdown))
     log.Logf(0, "%v\n", pretty.Config("Timeout", c.Timeout))
     log.Logf(0, "%v\n", pretty.Config("FollowRedirects", c.doRedirect))
     log.Logf(0, "%v\n", pretty.Config("UserAgent", c.UserAgent))
+}
+
+func New(cfg HttpCfg) *HttpClient {
+    client := &HttpClient{
+        client:   http.Client{
+            CheckRedirect: cfg.Redirect,
+            Timeout:       cfg.Timeout,
+        },
+        sem:      *semaphore.New(cfg.MaxCalls),
+        slowdown: cfg.Slowdown,
+    }
+
+    if cfg.Proxy != nil {
+        client.client.Transport = &http.Transport{
+            Proxy: http.ProxyURL(cfg.Proxy),
+            TLSClientConfig: &tls.Config{
+                InsecureSkipVerify: true,
+            },
+        }
+    }
+
+    return client
 }
 
 // Wait for slowdown time until we let another thread in here again
