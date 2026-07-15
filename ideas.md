@@ -7,4 +7,4 @@
 - scan common ports for the http server
 - runtime monitoring
 - subdommain enum
-- proxy to burp
+- scan various TLS headers
