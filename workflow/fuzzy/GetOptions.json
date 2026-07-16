@@ -1,0 +1,44 @@
+{
+    "Id": "GetOptions",
+    "Mode": "Fuzzy",
+    "RequestTemplate": {
+        "Method": "OPTIONS",
+        "UrlTemplate": "BASE",
+        "Header": {
+            "User-Agent": "DEFAULT"
+        }
+    },
+    "ResponseAction": {
+        "FactConditions": [
+            {
+                "Conditions": [
+                    {
+                        "Field": "StatusCode",
+                        "Condition": "OneOf",
+                        "Values": ["200", "204"]
+                    },
+                    {
+                        "Field": "HdrAllow",
+                        "Condition": "NonEmpty"
+                    }
+                ],
+                "Facts": {
+                    "Exists": "true",
+                    "Options": "HdrAllow"
+                }
+            },
+            {
+                "Conditions": [
+                    {
+                        "Field": "StatusCode",
+                        "Condition": "OneOf",
+                        "Values": ["301", "302", "303", "307", "308"]
+                    }
+                ],
+                "Facts": {
+                    "Redirects": "HdrLocation"
+                }
+            }
+        ]
+    }
+}

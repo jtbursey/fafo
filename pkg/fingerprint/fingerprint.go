@@ -21,6 +21,7 @@ const (
     FieldUrl           Field = "Url"
     FieldFuzzRecursive Field = "FuzzRecursive"
     FieldHdrLocation   Field = "HdrLocation"
+    FieldHdrAllow      Field = "HdrAllow"
     FieldTautology     Field = "Tautology"
 
     Contains           ConditionType = "Contains"
@@ -57,6 +58,8 @@ func (f Field) Get(resp *http.Response, req *http.Request, base *fact.Target, cf
         return fmt.Sprintf("%v", cfg.FuzzRecursive), nil
     case FieldHdrLocation:
         return resp.Header["Location"][0], nil
+    case FieldHdrAllow:
+        return strings.Join(resp.Header["Allow"], ","), nil
     case FieldTautology:
         return "true", nil
     default:
