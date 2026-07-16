@@ -5,6 +5,7 @@ package fingerprint
 import (
     "fmt"
     "net/http"
+    "slices"
     "strings"
 
     "fafo/pkg/config"
@@ -76,12 +77,15 @@ func (c *Condition) Validate() bool {
 func (c *Condition) doCompare(field string) bool {
     switch c.Condition {
     case OneOf:
-        return strings.Contains(field, c.Values[0])
+        return slices.Contains(c.Values, field)
     case Equals:
         return field == c.Values[0]
+    case Contains:
+        return strings.Contains(field, c.Values[0])
     default:
         return false
     }
+    return false
 }
 
 func (c *Condition) Evaluate(resp *http.Response, req *http.Request, base *fact.Target, cfg *config.Config) (bool, error) {
