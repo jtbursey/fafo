@@ -63,30 +63,6 @@
                     "Redirects": "HdrLocation"
                 }
             }
-        ],
-        "JobConditions": [
-            {
-                "Conditions": [
-                    {
-                        "Field": "StatusCode",
-                        "Condition": "OneOf",
-                        "Values": ["200", "204", "301", "302", "307", "401"]
-                    },
-                    {
-                        "Field": "FuzzRecursive",
-                        "Condition": "Equals",
-                        "Values": ["true"]
-                    }
-                ],
-                "Jobs": [
-                    {
-                        "Mode": "Discovery",
-                        "Action": "FuzzFiles",
-                        "Priority": 5,
-                        "Target": "CURRENT"
-                    }
-                ]
-            }
         ]
     }
 }
