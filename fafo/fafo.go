@@ -118,8 +118,9 @@ func main() {
     firstTarget := &fact.Target{
         Facts: make(map[fact.FactKey]fact.FactValue),
     }
-    if _, err := firstTarget.Url.Parse(*flagURL); err != nil {
-        log.Errf("Failed to parse url: %v", *flagURL)
+    var urlerr error
+    if firstTarget.Url, urlerr = url.Parse(*flagURL); urlerr != nil {
+        log.Errf("Failed to parse url: %v: %v", *flagURL, urlerr)
         return
     }
 
