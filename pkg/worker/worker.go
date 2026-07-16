@@ -4,6 +4,7 @@ package worker
 
 import (
     "fmt"
+    "net/url"
 
     "fafo/pkg/env"
     "fafo/pkg/fact"
@@ -84,10 +85,17 @@ func (w *Worker) Loop(id uint, env *env.Env) {
 
             target := env.Targets.Pull(curJob.Target)
             if target == nil {
-                w.Errf("Failed to pull target: %v: Target does not exist.\n", curJob.Target)
-                w.newStatus(StatusIdle)
-                env.Jobqueue.Finish()
-                continue
+                target = &fact.Target{
+                    Facts: make(map[fact.FactKey]fact.FactValue),
+                }
+                if tmpUrl, err := url.Parse(curJob.Target); err != nil {
+                    w.Errf("Failed to parse Url from Job: %v: %v\n", curJob.Target, err)
+                    w.newStatus(StatusIdle)
+                    env.Jobqueue.Finish()
+                    continue
+                } else {
+                    target.Url = tmpUrl
+                }
             }
 
             w.dispatch(&curJob, target, env)
