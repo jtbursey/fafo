@@ -101,8 +101,6 @@ func (f *Fingerprint) Evaluate(resp *http.Response, req *http.Request, base *fac
         res, err := c.Evaluate(resp, req, base, cfg)
         if !res {
             return false, err
-        } else {
-            return true, err
         }
     }
     return true, nil
