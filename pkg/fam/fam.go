@@ -27,7 +27,7 @@ import (
 
 var (
     // Defaults from ffuf
-    aliveValid = []int {200, 204, 301, 302, 307, 401}
+    aliveValid = []int {200, 204, 301, 302, 307, 401, 405}
 )
 
 type Fam struct {
