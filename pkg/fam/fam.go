@@ -130,7 +130,7 @@ func (fam *Fam) channelPayload(pylds *action.PayloadSet, e *env.Env) int {
 
 func (fam *Fam) payloadReplace(pyld *action.Payload, origin string) string {
     if len(pyld.Id) > 0 && strings.Contains(origin, pyld.Id) {
-        strings.ReplaceAll(origin, pyld.Id, pyld.Pl)
+        origin = strings.ReplaceAll(origin, pyld.Id, pyld.Pl)
     }
     return origin
 }
