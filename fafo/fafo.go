@@ -27,9 +27,8 @@ const (
 
 // Define the command line args here
 var (
-    flagURL     = flag.String("url", "", "The base `URL` (domain) to hit")
-    flagEP      = flag.String("ep", "", "The specific `Endpoint` to hit (overrides URL)")
-    flagPort    = flag.Int("p", 443, "The `Port` on which to scan")
+    flagURL     = flag.String("url", "", "The base `URL` to hit")
+    flagPort    = flag.Int("p", 0, "The `Port` on which to scan")
     flagProxy   = flag.String("proxy", "", "The http `Proxy` server to proxy through")
     flagOut     = flag.String("o", config.DefaultFindingsDir, "The `Directory` in which to put the findings")
     flagC       = flag.String("c", "", "The `Config File` to use")
@@ -67,8 +66,9 @@ func main() {
 
     // TODO: combine this into single url, then identify it automatically
     // TODO: Convert my url strings into go urls
-    if *flagURL == "" && *flagEP == "" {
-        log.Err("No target was given! Please use either -url or -ep\n")
+    // TODO: if Port is not given, intuit port from protocol
+    if *flagURL == "" {
+        log.Err("No target was given! Please use -url\n")
         flag.PrintDefaults()
         return
     }
@@ -116,14 +116,13 @@ func main() {
 
     // Define the top-level target
     firstTarget := &fact.Target{
-        Port:  *flagPort,
         Facts: make(map[fact.FactKey]fact.FactValue),
     }
-    if *flagEP != "" {
-        firstTarget.Url = *flagEP
-    } else {
-        firstTarget.Url = *flagURL
+    if _, err := firstTarget.Url.Parse(*flagURL); err != nil {
+        log.Errf("Failed to parse url: %v", *flagURL)
+        return
     }
+
     env.FirstTarget = *firstTarget
     env.Targets.Push(*firstTarget)
 

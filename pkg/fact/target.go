@@ -3,8 +3,7 @@
 package fact
 
 import (
-    "fmt"
-    "strings"
+    "net/url"
     "sync"
 
     "fafo/pkg/log"
@@ -20,8 +19,7 @@ const (
 )
 
 type Target struct {
-    Url     string
-    Port    int
+    Url     *url.URL
     Facts   map[FactKey]FactValue           // The information we have learned
 }
 
@@ -31,7 +29,7 @@ type TargetMap struct {
 }
 
 func (tgt *Target) Key() string {
-    return fmt.Sprintf("%v:%v", tgt.Url, tgt.Port)
+    return tgt.Url.String()
 }
 
 func (tm *TargetMap) Pull(key string) *Target {
@@ -87,27 +85,15 @@ func (tm *TargetMap) Push(target Target) {
 func (tm *TargetMap) PrintFindings() {
     log.Log(0, "\nFindings:\n")
     for _, tgt := range tm.tm {
-        log.Logf(0, "Target: %v\n", tgt.Url)
+        log.Logf(0, "Target: %v\n", tgt.Url.String())
         for key, value := range tgt.Facts {
             log.Logf(0, "    [%v: %v]\n", key, value)
         }
     }
 }
 
-func (tgt *Target) IsPath() bool {
-    return strings.HasSuffix(tgt.Url, "/")
-}
-
 func (tgt *Target) PrintFacts(v int, prefix string) {
     for key, value := range tgt.Facts {
-        log.Logf(v, "%v%*s [%v: %v]\n", prefix, pretty.UrlWidth, tgt.Url, key, value)
+        log.Logf(v, "%v%*s [%v: %v]\n", prefix, pretty.UrlWidth, tgt.Url.String(), key, value)
     }
-}
-
-func UrlAppend(url string, newBit string) string {
-    sep := ""
-    if len(url) > 0 && !strings.HasSuffix(url, "/") {
-        sep = "/"
-    }
-    return fmt.Sprintf("%v%v%v", url, sep, newBit)
 }

@@ -81,8 +81,6 @@ func (w *Worker) Loop(id uint, env *env.Env) {
         if maybeJob := env.Jobqueue.Pop(); maybeJob != nil {
             curJob := maybeJob.(job.Job)
             w.newStatus(StatusWorking)
-            
-            // Pull the corpus
 
             target := env.Targets.Pull(curJob.Target)
             if target == nil {
@@ -93,9 +91,6 @@ func (w *Worker) Loop(id uint, env *env.Env) {
             }
 
             w.dispatch(&curJob, target, env)
-
-            // push corpus sync
-            
             w.newStatus(StatusIdle)
             env.Jobqueue.Finish()
         }

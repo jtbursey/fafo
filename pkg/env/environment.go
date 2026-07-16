@@ -35,8 +35,8 @@ type Env struct {
 }
 
 func (env *Env) Debug() {
-    if env.FirstTarget.Url != "" {
-        log.Logf(0, "%v\n", pretty.Config("Target", env.FirstTarget.Url))
+    if env.FirstTarget.Url != nil {
+        log.Logf(0, "%v\n", pretty.Config("Target", env.FirstTarget.Url.String()))
     }
     env.Cfg.Debug()
     log.Log(0, "\n\n")

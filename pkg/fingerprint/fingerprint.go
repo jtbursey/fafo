@@ -54,7 +54,7 @@ func (f Field) Get(resp *http.Response, req *http.Request, base *fact.Target, cf
     case FieldStatusCode:
         return fmt.Sprintf("%v", resp.StatusCode), nil
     case FieldUrl:
-        return fmt.Sprintf("%v", req.URL.String()), nil
+        return fmt.Sprintf("%v", req.URL.String()), nil // Does this want response or request?
     case FieldFuzzRecursive:
         return fmt.Sprintf("%v", cfg.FuzzRecursive), nil
     case FieldHdrLocation:

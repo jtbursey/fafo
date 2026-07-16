@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+    "net/url"
 	"os"
 	"slices"
 	"strings"
@@ -139,16 +140,19 @@ func (fam *Fam) buildMethod(pyld *action.Payload, reqt *action.RequestTemplate) 
     return fam.payloadReplace(pyld, reqt.Method)
 }
 
-func (fam *Fam) buildUrl(pyld *action.Payload, base *fact.Target, reqt *action.RequestTemplate) string {
-    url := reqt.Url
-    if strings.Contains(url, "BASE") {
-        url = strings.ReplaceAll(url, "BASE", base.Url)
+func (fam *Fam) buildUrl(pyld *action.Payload, base *fact.Target, reqt *action.RequestTemplate) (*url.URL, error) {
+    newUrl := reqt.Url
+    if strings.Contains(newUrl, "BASE") {
+        newUrl = strings.ReplaceAll(newUrl, "BASE", base.Url.String())
     } else {
-        fam.Err("No BASE in Url Template!")
-        return ""
+        return nil, fmt.Errorf("No BASE in Url Template: %v", newUrl)
     }
 
-    return fam.payloadReplace(pyld, url)
+    ret, err := url.Parse(fam.payloadReplace(pyld, newUrl))
+    if err != nil {
+        return nil, fmt.Errorf("Failed to parse new Url: %v: %v\n", fam.payloadReplace(pyld, newUrl), err)
+    }
+    return ret, nil
 }
 
 func (fam *Fam) buildBodyReader(pyld *action.Payload, base *fact.Target, reqt *action.RequestTemplate) io.Reader {
@@ -162,7 +166,6 @@ func (fam *Fam) buildHeader(pyld *action.Payload, reqt *action.RequestTemplate, 
             header["User-Agent"] = []string{cfg.UserAgent}
             continue
         }
-
         header[hdr] = append(header[hdr], fam.payloadReplace(pyld, val))
     }
 
@@ -175,10 +178,14 @@ func (fam *Fam) buildHeader(pyld *action.Payload, reqt *action.RequestTemplate, 
 
 // For now the request is simple. No need for much
 func (fam *Fam) buildRequest(pyld *action.Payload, base *fact.Target, reqt *action.RequestTemplate, env *env.Env) *http.Request {
-    url := fam.buildUrl(pyld, base, reqt)
-    req, _ := http.NewRequest(fam.buildMethod(pyld, reqt), url, fam.buildBodyReader(pyld, base, reqt))
+    url, err := fam.buildUrl(pyld, base, reqt)
+    if err != nil {
+        fam.Errf("%v\n", err)
+        return nil
+    }
+    req, _ := http.NewRequest(fam.buildMethod(pyld, reqt), url.String(), fam.buildBodyReader(pyld, base, reqt))
     if req == nil {
-        fam.Errf("Failed to build request for %v (Base: %v)\n", url)
+        fam.Errf("Failed to build request for %v (Base: %v)\n", url.String(), base.Url.String())
         return nil
     }
 
@@ -211,8 +218,7 @@ func (fam *Fam) handleResponse(resp *http.Response, req *http.Request, base *fac
     }
 
     res := fact.Target{
-        Url:   resp.Request.URL.String(), // Use the final URL
-        Port:  base.Port,
+        Url:   resp.Request.URL, // Use the final URL
         Facts: make(map[fact.FactKey]fact.FactValue),
     }
 
@@ -229,7 +235,7 @@ func (fam *Fam) handleResponse(resp *http.Response, req *http.Request, base *fac
     if slices.Contains(aliveValid, resp.StatusCode) {
         fam.Logf(0, "%v\n", pretty.Response(resp, req.URL.String()))
     } else {
-        fam.Logf(2, "%v\n", pretty.Response(resp, res.Url))
+        fam.Logf(2, "%v\n", pretty.Response(resp, res.Url.String()))
     }
 
     // Push Facts
