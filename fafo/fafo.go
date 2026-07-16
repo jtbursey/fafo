@@ -5,6 +5,7 @@ package main
 import (
     "flag"
     "fmt"
+    "net"
     "net/http"
     "net/url"
     "path/filepath"
@@ -64,9 +65,6 @@ func Loop(env *env.Env) {
 func main() {
     flag.Parse()
 
-    // TODO: combine this into single url, then identify it automatically
-    // TODO: Convert my url strings into go urls
-    // TODO: if Port is not given, intuit port from protocol
     if *flagURL == "" {
         log.Err("No target was given! Please use -url\n")
         flag.PrintDefaults()
@@ -122,6 +120,10 @@ func main() {
     if firstTarget.Url, urlerr = url.Parse(*flagURL); urlerr != nil {
         log.Errf("Failed to parse url: %v: %v", *flagURL, urlerr)
         return
+    }
+
+    if *flagPort != 0 {
+        firstTarget.Url.Host = net.JoinHostPort(firstTarget.Url.Hostname(), fmt.Sprintf("%v", *flagPort))
     }
 
     env.FirstTarget = *firstTarget
