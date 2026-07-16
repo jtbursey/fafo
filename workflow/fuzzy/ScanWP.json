@@ -1,0 +1,92 @@
+{
+    "Id": "ScanWP",
+    "Mode": "Fuzzy",
+    "PayloadSet": {
+        "Id": "FUZZ",
+        "File": "",
+        "List": ["login.php", "wp-login.php", "xmlrpc.php", "robots.txt", "readme.html", "wp-cron.php", "wp-admin", "wp-content", "index.php", "license.txt", "wp-activate.php", "wp-links-opml.php", "wp-load.php", "wp-mail.php", "wp-settings.php", "wp-signup.php", "wp-trackback.php"]
+    },
+    "RequestTemplate": {
+        "Method": "GET",
+        "UrlTemplate": "BASE/FUZZ",
+        "Header": {
+            "User-Agent": "DEFAULT"
+        }
+    },
+    "ResponseAction": {
+        "ScreenShotConditions": [
+            {
+                "Field": "StatusCode",
+                "Condition": "OneOf",
+                "Values": ["200"]
+            }
+        ],
+        "FactConditions": [
+            {
+                "Conditions": [
+                    {
+                        "Field": "StatusCode",
+                        "Condition": "OneOf",
+                        "Values": ["200", "204", "301", "302", "307", "401"]
+                    }
+                ],
+                "Facts": {
+                    "Exists": "true"
+                }
+            },
+            {
+                "Conditions": [
+                    {
+                        "Field": "StatusCode",
+                        "Condition": "Equals",
+                        "Values": ["200"]
+                    },
+                    {
+                        "Field": "Url",
+                        "Condition": "Contains",
+                        "Values": "wp-login.php"
+                    }
+                ],
+                "Facts": {
+                    "IsWPLogin": "true"
+                }
+            },
+            {
+                "Conditions": [
+                    {
+                        "Field": "StatusCode",
+                        "Condition": "OneOf",
+                        "Values": ["301", "302", "303", "307", "308"]
+                    }
+                ],
+                "Facts": {
+                    "Redirects": "HdrLocation"
+                }
+            }
+        ],
+        "JobConditions": [
+            {
+                "Conditions": [
+                    {
+                        "Field": "StatusCode",
+                        "Condition": "OneOf",
+                        "Values": ["200", "204", "301", "302", "307", "401"]
+                    },
+                    {
+                        "Field": "FuzzRecursive",
+                        "Condition": "Equals",
+                        "Values": ["true"]
+                    }
+                ],
+                "Jobs": [
+                    {
+                        "Mode": "Discovery",
+                        "Action": "FuzzFiles",
+                        "Priority": 5,
+                        "Target": "CURRENT"
+                    }
+                ]
+            }
+        ]
+    }
+}
