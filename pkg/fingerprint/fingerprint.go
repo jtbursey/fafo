@@ -5,7 +5,7 @@ package fingerprint
 import (
     "fmt"
     "net/http"
-    "slices"
+    "strings"
 
     "fafo/pkg/config"
     "fafo/pkg/fact"
@@ -76,7 +76,7 @@ func (c *Condition) Validate() bool {
 func (c *Condition) doCompare(field string) bool {
     switch c.Condition {
     case OneOf:
-        return slices.Contains(c.Values, field)
+        return strings.Contains(c.Values[0], field)
     case Equals:
         return field == c.Values[0]
     default:
