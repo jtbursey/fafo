@@ -75,7 +75,6 @@
                 ],
                 "Jobs": [
                     {
-                        "Mode": "Fuzzy",
                         "Action": "GetOptions",
                         "Priority": 4,
                         "Target": "CURRENT"

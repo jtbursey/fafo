@@ -195,7 +195,6 @@ func (fam *Fam) buildRequest(pyld *action.Payload, base *fact.Target, reqt *acti
 
 func (fam *Fam) buildJob(base *job.Job, target *fact.Target) job.Job {
     newJob := job.Job{
-        Mode:     base.Mode,
         Action:   base.Action,
         Priority: base.Priority,
     }

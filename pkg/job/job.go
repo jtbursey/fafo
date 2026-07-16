@@ -19,7 +19,6 @@ const (
 )
 
 type Job struct {
-    Mode     WorkerMode
     Action   string
     Priority int
     index    int

@@ -59,13 +59,11 @@
                 ],
                 "Jobs": [
                     {
-                        "Mode": "Discovery",
                         "Action": "FuzzFiles",
                         "Priority": 5,
                         "Target": "CURRENT"
                     },
                     {
-                        "Mode": "Discovery",
                         "Action": "FuzzDirectories",
                         "Priority": 5,
                         "Target": "CURRENT"
