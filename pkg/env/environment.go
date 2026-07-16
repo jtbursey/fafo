@@ -103,7 +103,7 @@ func (env *Env) FixPayloadFile(act *action.Action) error {
 }
 
 func (env *Env) ValidateAction(act *action.Action) error {
-    if act.Pylds != nil {
+    if act.Pylds != nil && act.Pylds.File != "" {
         if _, err := env.Cfg.GetAsFilename(act.Pylds.File); err != nil {
             log.Logf(0, "Payload file \"%v\" (%v) is not a valid file or defined key.\n", act.Pylds.File, act.Id)
             env.FixPayloadFile(act)

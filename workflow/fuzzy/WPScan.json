@@ -44,7 +44,7 @@
                     {
                         "Field": "Url",
                         "Condition": "Contains",
-                        "Values": "wp-login.php"
+                        "Values": ["wp-login.php"]
                     }
                 ],
                 "Facts": {
