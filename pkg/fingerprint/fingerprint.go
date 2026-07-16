@@ -76,7 +76,7 @@ func (c *Condition) Validate() bool {
 func (c *Condition) doCompare(field string) bool {
     switch c.Condition {
     case OneOf:
-        return strings.Contains(c.Values[0], field)
+        return strings.Contains(field, c.Values[0])
     case Equals:
         return field == c.Values[0]
     default:
