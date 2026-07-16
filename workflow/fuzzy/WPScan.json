@@ -63,6 +63,25 @@
                     "Redirects": "HdrLocation"
                 }
             }
+        ],
+        "JobConditions": [
+            {
+                "Conditions": [
+                    {
+                        "Field": "StatusCode",
+                        "Condition": "Equals",
+                        "Values": ["405"]
+                    }
+                ],
+                "Jobs": [
+                    {
+                        "Mode": "Fuzzy",
+                        "Action": "GetOptions",
+                        "Priority": 4,
+                        "Target": "CURRENT"
+                    }
+                ]
+            }
         ]
     }
 }
