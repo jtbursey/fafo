@@ -1,5 +1,5 @@
 {
-    "Id": "ScanWP",
+    "Id": "WPScan",
     "Mode": "Fuzzy",
     "PayloadSet": {
         "Id": "FUZZ",
