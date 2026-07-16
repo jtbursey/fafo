@@ -13,17 +13,11 @@
             {
                 "Conditions": [
                     {
-                        "Field": "StatusCode",
-                        "Condition": "OneOf",
-                        "Values": ["200", "204"]
-                    },
-                    {
                         "Field": "HdrAllow",
                         "Condition": "NonEmpty"
                     }
                 ],
                 "Facts": {
-                    "Exists": "true",
                     "Options": "HdrAllow"
                 }
             },

@@ -27,6 +27,7 @@ const (
     Contains           ConditionType = "Contains"
     OneOf              ConditionType = "OneOf"
     Equals             ConditionType = "Equals"
+    NonEmpty           ConditionType = "NonEmpty"
 )
 
 // Field, Condition Value(s)
@@ -85,6 +86,8 @@ func (c *Condition) doCompare(field string) bool {
         return field == c.Values[0]
     case Contains:
         return strings.Contains(field, c.Values[0])
+    case NonEmpty:
+        return len(field) > 0
     default:
         return false
     }
