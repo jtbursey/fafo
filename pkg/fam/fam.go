@@ -299,13 +299,16 @@ func (fam *Fam) handlePayload(pyld *action.Payload, base *fact.Target, action *a
 }
 
 func (fam *Fam) childLoop(b *fact.Target, a *action.Action, e *env.Env) {
-    defer fam.wg.Done()
     for {
         select {
         case pyld := <- fam.plch:
             fam.handlePayload(&pyld, b, a, e)
         default:
-            if fam.signal {return}
+            // This stops one hell of a race.
+                // 1. child spawns and sees there is no payload to pull
+                // 2. channeler channels the payload and signals done
+                // 3. child goes to default and checks if done, returns.
+            if fam.signal && len(fam.plch) == 0 {return}
         }
     }
 }
@@ -313,7 +316,6 @@ func (fam *Fam) childLoop(b *fact.Target, a *action.Action, e *env.Env) {
 func (fam *Fam) runChildren(b *fact.Target, a *action.Action, env *env.Env, count int) {
     // Take hint from max calls for how many children to spawn
     childCount := min(env.Cfg.ClientCfg.MaxCalls, count)
-    fam.wg.Add(childCount)
     for range childCount {
         fam.wg.Go(func() {fam.childLoop(b, a, env)})
     }
