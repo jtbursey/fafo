@@ -160,7 +160,9 @@ func (fam *Fam) buildBodyReader(pyld *action.Payload, base *fact.Target, reqt *a
     if reqt.Body == nil {
         return nil
     }
-    return bytes.NewBuffer([]byte(strings.Join(reqt.Body, "\r\n")))
+    body := strings.Join(reqt.Body, "\r\n")
+    body = fam.payloadReplace(pyld, body)
+    return bytes.NewBuffer([]byte(body))
 }
 
 func (fam *Fam) buildHeader(pyld *action.Payload, reqt *action.RequestTemplate, cfg *httpclient.HttpCfg) map[string][]string {

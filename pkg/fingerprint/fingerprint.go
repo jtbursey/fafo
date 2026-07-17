@@ -58,7 +58,11 @@ func (f Field) Get(resp *http.Response, req *http.Request, base *fact.Target, cf
     case FieldFuzzRecursive:
         return fmt.Sprintf("%v", cfg.FuzzRecursive), nil
     case FieldHdrLocation:
-        return resp.Header["Location"][0], nil
+        if resp.Header["Location"] != nil {
+            return resp.Header["Location"][0], nil
+        } else {
+            return "", fmt.Errorf("%v was not set in response", f)
+        }
     case FieldHdrAllow:
         return strings.Join(resp.Header["Allow"], ","), nil
     case FieldTautology:
@@ -91,7 +95,6 @@ func (c *Condition) doCompare(field string) bool {
     default:
         return false
     }
-    return false
 }
 
 func (c *Condition) Evaluate(resp *http.Response, req *http.Request, base *fact.Target, cfg *config.Config) (bool, error) {
