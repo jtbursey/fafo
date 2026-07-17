@@ -6,7 +6,6 @@ package fam
 
 import (
 	"bufio"
-    "bytes"
 	"fmt"
 	"io"
 	"net/http"
@@ -166,7 +165,7 @@ func (fam *Fam) buildBodyReader(pyld *action.Payload, base *fact.Target, reqt *a
     }
     body := strings.Join(reqt.Body, "\r\n")
     body = fam.payloadReplace(pyld, body)
-    return bytes.NewBuffer([]byte(body))
+    return strings.NewReader(body)
 }
 
 func (fam *Fam) buildHeader(pyld *action.Payload, reqt *action.RequestTemplate, cfg *httpclient.HttpCfg) map[string][]string {
