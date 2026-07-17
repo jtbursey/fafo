@@ -63,8 +63,6 @@ func (w *Worker) resetMode() {
 }
 
 func (w *Worker) dispatch(job *job.Job, t *fact.Target, env *env.Env) {
-    
-
     if action, ok := env.Actions[job.Action]; ok {
         w.newMode(action.Mode)
         f := fam.Fam{
