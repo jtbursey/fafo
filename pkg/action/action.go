@@ -28,7 +28,7 @@ type RequestTemplate struct {
     Method    string                          `json:"Method"`
     Url       string                          `json:"UrlTemplate"`
     Header    map[string]string               `json:"Header"`
-    //Body   *BodyTemplate
+    Body      []string                        `json:Body`
 }
 
 // Job conditionals and Fact conditionals

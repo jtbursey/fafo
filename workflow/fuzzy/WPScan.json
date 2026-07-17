@@ -80,6 +80,27 @@
                         "Target": "CURRENT"
                     }
                 ]
+            },
+            {
+                "Conditions": [
+                    {
+                        "Field": "StatusCode",
+                        "Condition": "Equals",
+                        "Values": ["200"]
+                    },
+                    {
+                        "Field": "Url",
+                        "Condition": "Contains",
+                        "Values": ["wp-login.php"]
+                    }
+                ],
+                "Jobs": [
+                    {
+                        "Action": "WPSpray",
+                        "Priority": 2,
+                        "Target": "CURRENT"
+                    }
+                ]
             }
         ]
     }
