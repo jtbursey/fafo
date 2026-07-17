@@ -250,7 +250,7 @@ func (fam *Fam) handleResponse(resp *http.Response, req *http.Request, base *fac
     for _, pair := range respAct.Factcond {
         b, err := pair.Fingerprint.Evaluate(resp, req, base, &env.Cfg)
         if err != nil {
-            fam.Errf("Failed to evaluation Fact condition: %v\n", err)
+            fam.Warnf("Failed to evaluation Fact condition: %v\n", err)
         }
         if b {
             for key, value := range pair.FactPair {
@@ -272,7 +272,7 @@ func (fam *Fam) handleResponse(resp *http.Response, req *http.Request, base *fac
     for _, pair := range respAct.Jobcond {
         b, err := pair.Fingerprint.Evaluate(resp, req, base, &env.Cfg)
         if err != nil {
-            fam.Errf("Failed to evaluation Job condition: %v\n", err)
+            fam.Warnf("Failed to evaluation Job condition: %v\n", err)
         }
         if b {
             for _, j := range pair.Jobs {
