@@ -79,9 +79,9 @@ func (env *Env) ParseActions() error {
         return err
     }
 
-    // if err := env.parseActionsInDir(DefaultWorkflowDir+"attack/"); err != nil {
-    //     return err
-    // }
+    if err := env.parseActionsInDir(DefaultWorkflowDir+"attack/"); err != nil {
+        return err
+    }
 
     return nil
 }
