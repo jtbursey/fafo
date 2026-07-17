@@ -59,6 +59,10 @@ func (fam *Fam) Err(msg string) {
     fam.Errf("%v\n", msg)
 }
 
+func (fam *Fam) Warnf(msg string, args ...any) {
+    log.Logf(2, fmt.Sprintf("%*s%v: %v", pretty.PrefixWidth, fmt.Sprintf("[%v]: ", fam.Caller), pretty.Orange("Warning"), msg), args...)
+}
+
 func (fam *Fam) Init(env *env.Env) {
     fam.signal = false
     fam.plch = make(chan action.Payload, env.Cfg.ClientCfg.MaxCalls*2)
@@ -219,7 +223,7 @@ func (fam *Fam) handleResponse(resp *http.Response, req *http.Request, base *fac
     _, err := io.ReadAll(resp.Body)
     resp.Body.Close()
     if err != nil {
-        fam.Errf("Unexpected error in reading response body: %v\n", err)
+        fam.Warnf("Unexpected error in reading response body: %v\n", err)
     }
 
     res := fact.Target{
@@ -230,7 +234,7 @@ func (fam *Fam) handleResponse(resp *http.Response, req *http.Request, base *fac
     if !env.Cfg.DisableScreenShot && respAct.ScrShcond != nil {
         b, err := respAct.ScrShcond.Evaluate(resp, req, base, &env.Cfg)
         if err != nil {
-            fam.Errf("Failed to evaluation Screenshot condition: %v", err)
+            fam.Warnf("Failed to evaluation Screenshot condition: %v", err)
         }
         if b {
             env.ScrShCh <- *resp.Request
