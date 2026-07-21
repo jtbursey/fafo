@@ -1,11 +1,13 @@
 {
     "Id": "FuzzDirectories",
     "Mode": "Discovery",
-    "PayloadSet": {
-        "Id": "FUZZ",
-        "File": "DirectoryFuzzList",
-        "List": []
-    },
+    "PayloadSet": [
+        {
+            "Id": "FUZZ",
+            "File": "DirectoryFuzzList",
+            "List": []
+        }
+    ],
     "RequestTemplate": {
         "Method": "GET",
         "UrlTemplate": "BASE/FUZZ"

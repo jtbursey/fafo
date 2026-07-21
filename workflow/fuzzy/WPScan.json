@@ -1,11 +1,13 @@
 {
     "Id": "WPScan",
     "Mode": "Fuzzy",
-    "PayloadSet": {
-        "Id": "FUZZ",
-        "File": "",
-        "List": ["login.php", "wp-login.php", "xmlrpc.php", "robots.txt", "readme.html", "wp-cron.php", "wp-admin", "wp-content", "index.php", "license.txt", "wp-activate.php", "wp-links-opml.php", "wp-load.php", "wp-mail.php", "wp-settings.php", "wp-signup.php", "wp-trackback.php"]
-    },
+    "PayloadSet": [
+        {
+            "Id": "FUZZ",
+            "File": "",
+            "List": ["login.php", "wp-login.php", "xmlrpc.php", "robots.txt", "readme.html", "wp-cron.php", "wp-admin", "wp-content", "index.php", "license.txt", "wp-activate.php", "wp-links-opml.php", "wp-load.php", "wp-mail.php", "wp-settings.php", "wp-signup.php", "wp-trackback.php"]
+        }
+    ],
     "RequestTemplate": {
         "Method": "GET",
         "UrlTemplate": "BASE/FUZZ",

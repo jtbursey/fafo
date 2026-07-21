@@ -86,16 +86,17 @@ func (env *Env) ParseActions() error {
     return nil
 }
 
-func (env *Env) FixPayloadFile(act *action.Action) error {
-    if def, ok := config.DefaulSeclistFiles[act.Pylds.File]; ok {
-        log.Logf(0, "\"%v\" has a default SecLists file. Using default: \"%v\"\n", act.Pylds.File, def)
+func (env *Env) FixPayloadFile(pyld action.PayloadOrigin, act *action.Action) error {
+    if def, ok := config.DefaulSeclistFiles[pyld.File]; ok {
+        log.Logf(0, "\"%v\" has a default SecLists file. Using default: \"%v\"\n", pyld.File, def)
         seclists := env.Cfg.NeedSeclists()
-        env.Cfg.PayloadFiles[act.Pylds.File] = filepath.Join(seclists, def)
+        env.Cfg.PayloadFiles[pyld.File] = filepath.Join(seclists, def)
     } else {
-        log.Logf(0, "Treating \"%v\" as a key that has not been defined.\n", act.Pylds.File)
+        log.Logf(0, "Treating \"%v\" as a key that has not been defined.\n", pyld.File)
         filename := fs.GetFileFromStdio("Path to payload file")
-        env.Cfg.PayloadFiles[act.Pylds.File] = filename
+        env.Cfg.PayloadFiles[pyld.File] = filename
     }
+    
 
     // TODO: Make sure the new file exists
 
@@ -103,10 +104,12 @@ func (env *Env) FixPayloadFile(act *action.Action) error {
 }
 
 func (env *Env) ValidateAction(act *action.Action) error {
-    if act.Pylds != nil && act.Pylds.File != "" {
-        if _, err := env.Cfg.GetAsFilename(act.Pylds.File); err != nil {
-            log.Logf(0, "Payload file \"%v\" (%v) is not a valid file or defined key.\n", act.Pylds.File, act.Id)
-            env.FixPayloadFile(act)
+    for _, pyld := range act.Pylds {
+        if pyld.File != "" {
+            if _, err := env.Cfg.GetAsFilename(pyld.File); err != nil {
+                log.Logf(0, "Payload file \"%v\" (%v) is not a valid file or defined key.\n", pyld.File, act.Id)
+                env.FixPayloadFile(pyld, act)
+            }
         }
     }
 

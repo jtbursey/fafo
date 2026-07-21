@@ -34,7 +34,8 @@ var (
     flagOut     = flag.String("o", config.DefaultFindingsDir, "The `Directory` in which to put the findings")
     flagC       = flag.String("c", "", "The `Config File` to use")
     flagConfig  = flag.String("config", config.DefaultConfigFile, "The `Config File` to use")
-    flagNoScrSh = flag.Bool("disable-screenshot", false, "Disable all screenshotting functionality")
+    flagNoScrSh = flag.Bool("disable-screenshots", false, "Disable all screenshotting functionality")
+    flagNoChrm  = flag.Bool("disable-chrome", false, "Disable chrome functionality (includes screenshots)")
     flagAction  = flag.String("a", DefaultAction, "The first `Action` to carry out")
 )
 
@@ -90,7 +91,6 @@ func main() {
             cfg.ClientCfg.Proxy = proxy
         }
     }
-    
 
     log.Greeting("By Ocelot")
 
@@ -149,7 +149,12 @@ func main() {
     }
 
     var chrm *chrome.Chrome
-    if !*flagNoScrSh {
+    // TODO: put these flags in env so we cn debug them
+    if *flagNoChrm {
+        *flagNoScrSh = true
+    }
+
+    if !*flagNoScrSh && !*flagNoChrm{
         env.Cfg.ScrShDir = filepath.Join(env.Cfg.FindingsDir, "screenshots")
         if err := fs.Mkdir(env.Cfg.ScrShDir); err != nil {
             log.Errf("Failed to mkdir %v: %v", env.Cfg.ScrShDir, err)
@@ -163,7 +168,7 @@ func main() {
         }
         go chrm.Loop(env)
     } else {
-        log.Log(0, "Screenshotting is Disabled\n")
+        log.Log(0, "Screenshots are Disabled\n")
         env.Cfg.DisableScreenShot = true
     }
 

@@ -33,7 +33,7 @@ var (
 
 type Fam struct {
     Caller string                // Id of whoever called this (i.e. "Worker 0")
-    plch   chan action.Payload
+    plch   chan []action.Payload
     signal bool
     wg     sync.WaitGroup
 }
@@ -64,87 +64,137 @@ func (fam *Fam) Warnf(msg string, args ...any) {
 
 func (fam *Fam) Init(env *env.Env) {
     fam.signal = false
-    fam.plch = make(chan action.Payload, env.Cfg.ClientCfg.MaxCalls*2)
+    fam.plch = make(chan []action.Payload, env.Cfg.ClientCfg.MaxCalls*2)
 }
 
-func (fam *Fam) channelFile(Pylds *action.PayloadSet, env *env.Env) {
-    defer func(){fam.signal = true}()
-    filename, err := env.Cfg.GetAsFilename(Pylds.File)
-    if err != nil {
-        fam.Errf("%v\n", err)
-        return
-    }
-    file, err := os.Open(filename)
-    if err != nil {
-        fam.Errf("Failed to open file %v: %v\n", filename, err)
-        return
-    }
-
-    scanner := bufio.NewScanner(file)
-    for scanner.Scan() {
-        fam.plch <- action.Payload{
-            Id:   Pylds.Id,
-            Pl:   scanner.Text(),
-        }
-    }
-    file.Close()
-}
-
-func (fam *Fam) channelList(Pylds *action.PayloadSet) {
-    defer func(){fam.signal = true}()
-    for _, pl := range Pylds.List {
-        fam.plch <- action.Payload{
-            Id:   Pylds.Id,
-            Pl:   pl,
-        }
-    }
-}
-
-func (fam *Fam) channelEmptyPayload() {
-    fam.plch <- action.Payload{
-        Id:   "",
-        Pl:   "",
-    } // Default signals work directly on target, no payload
-    fam.signal = true
-}
-
-func (fam *Fam) channelPayload(pylds *action.PayloadSet, e *env.Env) int {
+func (fam *Fam) countPayloads(pylds []action.PayloadOrigin, e *env.Env) (int, error) {
     count := 1
-    if pylds == nil { // Handle nil first to prevent issues
-        fam.channelEmptyPayload()
-    } else if pylds.File != "" {
-        file, err := e.Cfg.GetAsFilename(pylds.File)
-        if err != nil {
-            fam.Errf("%v\n", err)
-            return -1
-        }
-        count, err = fs.Wc(file)
-        if err != nil {
-            fam.Errf("Failed to open file %v: %v\n", file, err)
-            return -1
-        }
-        fam.wg.Go(func() {fam.channelFile(pylds, e)})
-    } else if pylds.List != nil {
-        count = len(pylds.List)
-        fam.wg.Go(func() {fam.channelList(pylds)})
-    } else {
-        fam.channelEmptyPayload()
+    if pylds == nil {
+        return count, nil
     }
-    return count
+    for _, origin := range pylds {
+        c := 1
+        if origin.File != "" {
+            file, err := e.Cfg.GetAsFilename(origin.File)
+            if err != nil {
+                fam.Errf("%v\n", err)
+                return count, err
+            }
+            c, err = fs.Wc(file)
+            if err != nil {
+                fam.Errf("Failed to open file %v: %v\n", file, err)
+                return count, err
+            }
+        } else if origin.List != nil {
+            c = len(origin.List)
+        }
+        // else count = 1
+        count *= c
+    }
+
+    return count, nil
 }
 
-func (fam *Fam) payloadReplace(pyld *action.Payload, origin string) string {
-    if len(pyld.Id) > 0 && strings.Contains(origin, pyld.Id) {
-        origin = strings.ReplaceAll(origin, pyld.Id, pyld.Pl)
+func (fam *Fam) recursiveChannel(list []action.PayloadOrigin, curPylds []action.Payload, env *env.Env) error {
+    // TODO: turn this into sub-functions
+
+    if len(list) == 0 && len(curPylds) == 0 {
+        newPylds := append(curPylds, action.Payload{
+            Id:   "",
+            Pl:   "",
+        })
+        fam.plch <- newPylds
+        return nil
+    } else if len(list) == 0 {
+        fam.Warnf("Called recursiveChannel on empty list.\n")
+        return nil
     }
+
+    current := list[0]
+    list = list[1:]
+    if current.File != "" {
+        filename, err := env.Cfg.GetAsFilename(current.File)
+        if err != nil {
+            return err
+        }
+        file, err := os.Open(filename)
+        if err != nil {
+            return err
+        }
+
+        scanner := bufio.NewScanner(file)
+        for scanner.Scan() {
+            newPylds := append(curPylds, action.Payload{
+                Id:   current.Id,
+                Pl:   scanner.Text(),
+            })
+            if len(list) > 0 {
+                if err := fam.recursiveChannel(list, newPylds, env); err != nil {
+                    return err
+                }
+            } else {
+                fam.plch <- newPylds
+            }
+        }
+        file.Close()
+    } else if current.List != nil {
+        for _, pl := range current.List {
+            newPylds := append(curPylds, action.Payload{
+                Id:   current.Id,
+                Pl:   pl,
+            })
+            if len(list) > 0 {
+                if err := fam.recursiveChannel(list, newPylds, env); err != nil {
+                    return err
+                }
+            } else {
+                fam.plch <- newPylds
+            }
+        }
+    } else {
+        newPylds := append(curPylds, action.Payload{
+            Id:   current.Id,
+            Pl:   "",
+        })
+        if len(list) > 0 {
+            if err := fam.recursiveChannel(list, newPylds, env); err != nil {
+                return err
+            }
+        } else {
+            fam.plch <- newPylds
+        }
+    }
+
+    return nil
+}
+
+func (fam *Fam) channelPayloads(pylds []action.PayloadOrigin, e *env.Env) (int, error) {
+    count, err := fam.countPayloads(pylds, e)
+    if err != nil {
+        fam.Errf("Failed to count Payloads: %v", err)
+        return count, err
+    }
+
+    fam.wg.Go(func() {fam.recursiveChannel(pylds, make([]action.Payload, 0), e); fam.signal = true})
+
+    return count, nil
+}
+
+func (fam *Fam) payloadReplace(pyldList []action.Payload, origin string) string {
+    for _, pyld := range pyldList {
+        if len(pyld.Id) > 0 && strings.Contains(origin, pyld.Id) {
+            origin = strings.ReplaceAll(origin, pyld.Id, pyld.Pl)
+        }
+    }
+    
     return origin
 }
 
-func (fam *Fam) buildMethod(pyld *action.Payload, reqt *action.RequestTemplate) string {
+func (fam *Fam) buildMethod(pyld []action.Payload, reqt *action.RequestTemplate) string {
     return fam.payloadReplace(pyld, reqt.Method)
 }
 
-func (fam *Fam) buildUrl(pyld *action.Payload, base *fact.Target, reqt *action.RequestTemplate) (*url.URL, error) {
+func (fam *Fam) buildUrl(pyld []action.Payload, base *fact.Target, reqt *action.RequestTemplate) (*url.URL, error) {
     newUrl := reqt.Url
     if strings.Contains(newUrl, "BASE") {
         newUrl = strings.ReplaceAll(newUrl, "BASE", base.Url.String())
@@ -159,7 +209,7 @@ func (fam *Fam) buildUrl(pyld *action.Payload, base *fact.Target, reqt *action.R
     return ret, nil
 }
 
-func (fam *Fam) buildBodyReader(pyld *action.Payload, base *fact.Target, reqt *action.RequestTemplate) io.Reader {
+func (fam *Fam) buildBodyReader(pyld []action.Payload, base *fact.Target, reqt *action.RequestTemplate) io.Reader {
     if reqt.Body == nil {
         return nil
     }
@@ -169,7 +219,7 @@ func (fam *Fam) buildBodyReader(pyld *action.Payload, base *fact.Target, reqt *a
     return strings.NewReader(body)
 }
 
-func (fam *Fam) buildHeader(pyld *action.Payload, reqt *action.RequestTemplate, cfg *httpclient.HttpCfg) map[string][]string {
+func (fam *Fam) buildHeader(pyld []action.Payload, reqt *action.RequestTemplate, cfg *httpclient.HttpCfg) map[string][]string {
     header := make(map[string][]string)
     for hdr, val := range reqt.Header {
         if hdr == "User-Agent" && val == "DEFAULT" {
@@ -187,7 +237,7 @@ func (fam *Fam) buildHeader(pyld *action.Payload, reqt *action.RequestTemplate, 
 }
 
 // For now the request is simple. No need for much
-func (fam *Fam) buildRequest(pyld *action.Payload, base *fact.Target, reqt *action.RequestTemplate, env *env.Env) *http.Request {
+func (fam *Fam) buildRequest(pyld []action.Payload, base *fact.Target, reqt *action.RequestTemplate, env *env.Env) *http.Request {
     url, err := fam.buildUrl(pyld, base, reqt)
     if err != nil {
         fam.Errf("%v\n", err)
@@ -218,7 +268,7 @@ func (fam *Fam) buildJob(base *job.Job, target *fact.Target) job.Job {
     return newJob
 }
 
-func (fam *Fam) handleResponse(pyld *action.Payload, resp *http.Response, req *http.Request, base *fact.Target, respAct *action.ResponseAction, env *env.Env) {
+func (fam *Fam) handleResponse(pyld []action.Payload, resp *http.Response, req *http.Request, base *fact.Target, respAct *action.ResponseAction, env *env.Env) {
     // Until we actually parse the body...
     _, err := io.ReadAll(resp.Body)
     resp.Body.Close()
@@ -241,6 +291,7 @@ func (fam *Fam) handleResponse(pyld *action.Payload, resp *http.Response, req *h
         }
     }
 
+    // TODO: print the payloads here
     if slices.Contains(aliveValid, resp.StatusCode) {
         fam.Logf(0, "%v\n", pretty.Response(resp, req.URL.String()))
     } else {
@@ -283,7 +334,7 @@ func (fam *Fam) handleResponse(pyld *action.Payload, resp *http.Response, req *h
     }
 }
 
-func (fam *Fam) handlePayload(pyld *action.Payload, base *fact.Target, action *action.Action, env *env.Env) {
+func (fam *Fam) handlePayload(pyld []action.Payload, base *fact.Target, action *action.Action, env *env.Env) {
     req := fam.buildRequest(pyld, base, action.Reqt, env)
     if req == nil {
         return
@@ -309,7 +360,7 @@ func (fam *Fam) childLoop(b *fact.Target, a *action.Action, e *env.Env) {
     for {
         select {
         case pyld := <- fam.plch:
-            fam.handlePayload(&pyld, b, a, e)
+            fam.handlePayload(pyld, b, a, e)
         default:
             // This stops one hell of a race.
                 // 1. child spawns and sees there is no payload to pull
@@ -332,8 +383,9 @@ func (fam *Fam) Run(b *fact.Target, action *action.Action, e *env.Env) {
     fam.Init(e)
 
     // Handle Payload
-    count := fam.channelPayload(action.Pylds, e)
-    if count < 0 {
+    count, err := fam.channelPayloads(action.Pylds, e)
+    if err != nil {
+        fam.Errf("Failed while channeling payloads: %v", err)
         return
     }
 

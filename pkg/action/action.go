@@ -17,7 +17,7 @@ type Payload struct {
     Pl      string                  // The actual payload
 }
 
-type PayloadSet struct {
+type PayloadOrigin struct {
     Id   string                               `json:"Id"`
     File string                               `json:"File"`
     List []string                             `json:"List"`
@@ -44,7 +44,7 @@ type ResponseAction struct {
 type Action struct {
     Id      string                            `json:"Id"`
     Mode    job.WorkerMode                    `json:"Mode"`
-    Pylds   *PayloadSet                       `json:"PayloadSet"`
+    Pylds   []PayloadOrigin                   `json:"PayloadSet"`
     Reqt    *RequestTemplate                  `json:"RequestTemplate"`
     RespAct *ResponseAction                   `json:"ResponseAction"`
 }
