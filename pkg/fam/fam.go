@@ -218,7 +218,7 @@ func (fam *Fam) buildJob(base *job.Job, target *fact.Target) job.Job {
     return newJob
 }
 
-func (fam *Fam) handleResponse(resp *http.Response, req *http.Request, base *fact.Target, respAct *action.ResponseAction, env *env.Env) {
+func (fam *Fam) handleResponse(pyld *action.Payload, resp *http.Response, req *http.Request, base *fact.Target, respAct *action.ResponseAction, env *env.Env) {
     // Until we actually parse the body...
     _, err := io.ReadAll(resp.Body)
     resp.Body.Close()
@@ -259,7 +259,7 @@ func (fam *Fam) handleResponse(resp *http.Response, req *http.Request, base *fac
                     res.Facts[key] = fact.FactValue(val)
                     continue
                 } else {
-                    res.Facts[key] = value
+                    res.Facts[key] = fact.FactValue(fam.payloadReplace(pyld, string(value)))
                 }
             }
         }
@@ -289,6 +289,9 @@ func (fam *Fam) handlePayload(pyld *action.Payload, base *fact.Target, action *a
         return
     }
 
+    // TODO: Maybe allow for multiple calls to set cookies?
+        // TODO: This also means multiple http clients for different cookies
+
     // TODO: try to pull the new request as a target to see if we've called it already.
         // Need to figure out what kinds of conditionals should considered
 
@@ -299,7 +302,7 @@ func (fam *Fam) handlePayload(pyld *action.Payload, base *fact.Target, action *a
         return
     }
 
-    fam.handleResponse(resp, req, base, action.RespAct, env)
+    fam.handleResponse(pyld, resp, req, base, action.RespAct, env)
 }
 
 func (fam *Fam) childLoop(b *fact.Target, a *action.Action, e *env.Env) {

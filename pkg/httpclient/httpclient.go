@@ -79,6 +79,7 @@ func (c *HttpCfg) Debug() {
 }
 
 func New(cfg HttpCfg) *HttpClient {
+    // This jar allows for certain logins like for WP. Maybe there is a better fix later.
     jar, err := cookiejar.New(nil)
     if err != nil {
         log.Errf("Failed to cookie jar: %v", err)

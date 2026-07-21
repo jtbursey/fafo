@@ -3,6 +3,7 @@
 package fact
 
 import (
+    "fmt"
     "net/url"
     "sync"
 
@@ -82,12 +83,23 @@ func (tm *TargetMap) Push(target Target) {
     }
 }
 
+func (tm *TargetMap) PrettyFinding(key FactKey, value FactValue) string {
+    prettyKey := string(key)
+    switch key {
+    case "Redirects":
+        prettyKey = pretty.Yellow(prettyKey)
+    case "Login":
+        prettyKey = pretty.Green(prettyKey)
+    }
+    return fmt.Sprintf("[%v: %v]", prettyKey, value)
+}
+
 func (tm *TargetMap) PrintFindings() {
     log.Log(0, "\nFindings:\n")
     for _, tgt := range tm.tm {
         log.Logf(0, "Target: %v\n", tgt.Url.String())
         for key, value := range tgt.Facts {
-            log.Logf(0, "    [%v: %v]\n", key, value)
+            log.Logf(0, "    %v\n", tm.PrettyFinding(key, value))
         }
     }
 }
