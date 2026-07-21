@@ -6,6 +6,7 @@ import (
     "crypto/tls"
     "fmt"
     "net/http"
+    "net/http/cookiejar"
     "net/url"
     "time"
 
@@ -78,10 +79,16 @@ func (c *HttpCfg) Debug() {
 }
 
 func New(cfg HttpCfg) *HttpClient {
+    jar, err := cookiejar.New(nil)
+    if err != nil {
+        log.Errf("Failed to cookie jar: %v", err)
+        return nil
+    }
     client := &HttpClient{
         client:   http.Client{
             CheckRedirect: cfg.Redirect,
             Timeout:       cfg.Timeout,
+            Jar:           jar,
         },
         sem:      *semaphore.New(cfg.MaxCalls),
         slowdown: cfg.Slowdown,

@@ -257,6 +257,9 @@ func (c *Chrome) Loop(env *env.Env) {
 }
 
 func (c *Chrome) SignalDone() {
+    if c == nil {
+        return
+    }
     c.doneSignal <- true
 }
 
