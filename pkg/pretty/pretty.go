@@ -33,6 +33,10 @@ func Blue(str string) string {
     return fmt.Sprintf("\033[34m%v\033[0m", str)
 }
 
+func Cyan(str string) string {
+    return fmt.Sprintf("\033[36m%v\033[0m", str)
+}
+
 func ColorCode(code int) string {
     scode := fmt.Sprintf("%v", code)
     switch code {

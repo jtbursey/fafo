@@ -90,6 +90,8 @@ func (tm *TargetMap) PrettyFinding(key FactKey, value FactValue) string {
         prettyKey = pretty.Yellow(prettyKey)
     case "Login":
         prettyKey = pretty.Green(prettyKey)
+    default:
+        prettyKey = pretty.Blue(prettyKey)
     }
     return fmt.Sprintf("[%v: %v]", prettyKey, value)
 }
