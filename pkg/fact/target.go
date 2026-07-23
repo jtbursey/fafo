@@ -109,7 +109,7 @@ func (tm *TargetMap) PrintFindings() {
     log.Log(0, "\nFindings:\n")
     for _, tgt := range tm.tm {
         space := tgt.LongestKey()
-        log.Logf(0, "Target: %v\n", tgt.MyUrl())
+        log.Logf(0, "Target: %v\n", tgt.Url.String())
         for key, values := range tgt.Facts {
             log.Logf(0, "%v\n", tm.PrettyFinding(key, values, space))
         }
@@ -144,6 +144,6 @@ func (tgt *Target) MyUrl() string {
 
 func (tgt *Target) PrintFacts(v int, prefix string) {
     for key, values := range tgt.Facts {
-        log.Logf(v, "%v%*s [%v: %v]\n", prefix, pretty.UrlWidth, tgt.MyUrl(), key, values)
+        log.Logf(v, "%v%*s [%v: %v]\n", prefix, pretty.UrlWidth, tgt.Url.String(), key, values)
     }
 }
