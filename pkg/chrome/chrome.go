@@ -77,13 +77,16 @@ func newInstance(env *env.Env) *instance {
         chromedp.Flag("deny-permission-prompts", true),
         chromedp.Flag("https-upgrades-enabled", false),
         //chromedp.Flag("explicitly-allowed-ports", ports),
+        chromedp.Flag("blink-settings", "scriptEnabled=true"),
         chromedp.Flag("no-sandbox", true),
         chromedp.WindowSize(1920, 1080),
         chromedp.UserDataDir(userDataDir),
     )
 
     // Proxy and specific Chrome path go here
-    // append(opts, chromedp.ProxyServer(Proxy))
+    if env.Cfg.ClientCfg.Proxy != nil {
+        opts = append(opts, chromedp.ProxyServer(env.Cfg.ClientCfg.Proxy.String()))
+    }
     // append(opts, chromedp.ExecPath(Path))
 
     ctx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
@@ -220,7 +223,7 @@ func (c *Chrome) ScreenShot(req *http.Request, env *env.Env) {
     }))
 
     if err := chromedp.Run(navigationCtx, tasks); err != nil {
-        c.Errf("Failed to capture Screenshot: %v\n", err)
+        //c.Errf("Failed to capture Screenshot: %v\n", err)
         env.Client.ReturnSem()
         return
     }
