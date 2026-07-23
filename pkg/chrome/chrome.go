@@ -141,7 +141,11 @@ func (c *Chrome) Log(v int, msg string) {
 }
 
 func (c *Chrome) Errf(msg string, args ...any) {
-    log.Logf(0, fmt.Sprintf("%*s%v: %v", pretty.PrefixWidth, c.prefix(), pretty.Orange("Error"), msg), args...)
+    pre := ""
+    if len(c.prefix()) > 0 {
+        pre = fmt.Sprintf("%*s", pretty.PrefixWidth, c.prefix())
+    }
+    log.Logf(0, fmt.Sprintf("%v%v: %v", pre, pretty.Orange("Error"), msg), args...)
 }
 
 func (c *Chrome) Err(msg string) {
