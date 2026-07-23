@@ -190,16 +190,35 @@ func (fam *Fam) payloadReplace(pyldList []action.Payload, origin string) string 
     return origin
 }
 
+func (fam *Fam) baseReplace(base *fact.Target, origin string) (string, error) {
+    if strings.Contains(origin, "BASE") {
+        origin = strings.ReplaceAll(origin, "BASE", base.Url.String())
+    } else {
+        return origin, fmt.Errorf("No BASE in Url Template: %v", origin)
+    }
+    return origin, nil
+}
+
+func (fam *Fam) fullReplace(pyldList []action.Payload, base *fact.Target, origin string) string {
+    origin, _ = fam.baseReplace(base, origin)
+
+    if strings.Contains(origin, "CURRENT") {
+        origin = strings.ReplaceAll(origin, "CURRENT", base.Url.String())
+    }
+
+    origin = fam.payloadReplace(pyldList, origin)
+    return origin
+}
+
 func (fam *Fam) buildMethod(pyld []action.Payload, reqt *action.RequestTemplate) string {
     return fam.payloadReplace(pyld, reqt.Method)
 }
 
 func (fam *Fam) buildUrl(pyld []action.Payload, base *fact.Target, reqt *action.RequestTemplate) (*url.URL, error) {
     newUrl := reqt.Url
-    if strings.Contains(newUrl, "BASE") {
-        newUrl = strings.ReplaceAll(newUrl, "BASE", base.Url.String())
-    } else {
-        return nil, fmt.Errorf("No BASE in Url Template: %v", newUrl)
+    var err error
+    if newUrl, err = fam.baseReplace(base, newUrl); err != nil {
+        return nil, err
     }
 
     ret, err := url.Parse(fam.payloadReplace(pyld, newUrl))
@@ -253,15 +272,14 @@ func (fam *Fam) buildRequest(pyld []action.Payload, base *fact.Target, reqt *act
     return req
 }
 
-func (fam *Fam) buildJob(base *job.Job, target *fact.Target) job.Job {
+func (fam *Fam) buildJob(pyld []action.Payload, base *job.Job, target *fact.Target) job.Job {
     newJob := job.Job{
         Action:   base.Action,
         Priority: base.Priority,
     }
 
-    if base.Target == "CURRENT" {
-        newJob.Target = target.Key()
-    } else {
+    base.Target = fam.fullReplace(pyld, target, base.Target)
+    if base.Target == "" {
         fam.Err("Unspecified Target for new job")
     }
 
@@ -294,6 +312,8 @@ func (fam *Fam) handleResponse(pyld []action.Payload, resp *http.Response, req *
     // TODO: print the payloads here
     if slices.Contains(aliveValid, resp.StatusCode) {
         fam.Logf(0, "%v\n", pretty.Response(resp, req.URL.String()))
+    } else if resp.StatusCode != 404 {
+        fam.Logf(1, "%v\n", pretty.Response(resp, req.URL.String()))
     } else {
         fam.Logf(2, "%v\n", pretty.Response(resp, res.Url.String()))
     }
@@ -328,7 +348,7 @@ func (fam *Fam) handleResponse(pyld []action.Payload, resp *http.Response, req *
         }
         if b {
             for _, j := range pair.Jobs {
-                env.JobCh <- fam.buildJob(&j, &res)
+                env.JobCh <- fam.buildJob(pyld, &j, &res)
             }
         }
     }

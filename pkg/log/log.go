@@ -17,8 +17,8 @@ var (
 
 // Verbosity:
 // 0:  Print only positive responses
-// 1:  Print Findings
-// 2:  Print negative responses
+// 1:  Print Findings, non-404 responses
+// 2:  Print negative (404) responses
 // 3:  Print worker transitions (and labels)
 // 4:  
 // 5:  

@@ -81,12 +81,15 @@ func (w *Worker) Loop(id uint, env *env.Env) {
             curJob := maybeJob.(job.Job)
             w.newStatus(StatusWorking)
 
+            // TODO: this is going to be hyper broken once we start doing variable/argument fuzzing
+                // The fix will be to only work on the url without argumments (host+path?)
+                // Should jobs get pushed with arguments? or is that up to the new actions to decide?
             target := env.Targets.Pull(curJob.Target)
             if target == nil {
                 target = &fact.Target{
                     Facts: make(map[fact.FactKey]fact.FactValue),
                 }
-                if tmpUrl, err := url.Parse(curJob.Target); err != nil {
+                if tmpUrl, err := url.Parse(fact.ChopSlash(curJob.Target)); err != nil {
                     w.Errf("Failed to parse Url from Job: %v: %v\n", curJob.Target, err)
                     w.newStatus(StatusIdle)
                     env.Jobqueue.Finish()

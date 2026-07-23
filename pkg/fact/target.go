@@ -5,6 +5,7 @@ package fact
 import (
     "fmt"
     "net/url"
+    "strings"
     "sync"
 
     "fafo/pkg/log"
@@ -27,6 +28,10 @@ type Target struct {
 type TargetMap struct {
     tm  map[string]Target
     mtx sync.Mutex
+}
+
+func ChopSlash(origin string) string {
+    return strings.TrimSuffix(origin, "/")
 }
 
 func (tgt *Target) Key() string {
