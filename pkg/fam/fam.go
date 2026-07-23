@@ -296,7 +296,7 @@ func (fam *Fam) handleResponse(pyld []action.Payload, resp *http.Response, req *
 
     res := fact.Target{
         Url:   resp.Request.URL, // Use the final URL
-        Facts: make(map[fact.FactKey]fact.FactValue),
+        Facts: make(map[fact.FactKey][]fact.FactValue),
     }
 
     if !env.Cfg.DisableScreenShot && respAct.ScrShcond != nil {
@@ -327,10 +327,9 @@ func (fam *Fam) handleResponse(pyld []action.Payload, resp *http.Response, req *
         if b {
             for key, value := range pair.FactPair {
                 if val, err := fingerprint.Field(value).Get(resp, req, base, &env.Cfg); err == nil {
-                    res.Facts[key] = fact.FactValue(val)
-                    continue
+                    res.AppendUniqueValues(key, []fact.FactValue{fact.FactValue(val)})
                 } else {
-                    res.Facts[key] = fact.FactValue(fam.payloadReplace(pyld, string(value)))
+                    res.AppendUniqueValues(key, []fact.FactValue{fact.FactValue(fam.payloadReplace(pyld, string(value)))})
                 }
             }
         }

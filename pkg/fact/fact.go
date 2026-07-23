@@ -2,6 +2,10 @@
 
 package fact
 
+// import (
+//     "fmt"
+// )
+
 type FactKey string
 type FactValue string
 
@@ -10,17 +14,10 @@ const (
     HasDied   FactKey = "HasDied"
     Exists    FactKey = "Exists"
     Redirects FactKey = "Redirects"
+    Path      FactKey = "Path"
+)
 
+var (
     True    FactValue = "true"
     False   FactValue = "false"
 )
-
-func FactBool(v FactValue) int {
-    switch v {
-    case True:
-        return 1
-    case False:
-        return 0
-    }
-    return -1
-}

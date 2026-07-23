@@ -5,6 +5,7 @@ package fact
 import (
     "fmt"
     "net/url"
+    "slices"
     "strings"
     "sync"
 
@@ -12,17 +13,9 @@ import (
     "fafo/pkg/pretty"
 )
 
-type TargetType string
-
-const (
-    TargetDomain TargetType = "Domain"      // Specifically for the base domain
-    TargetPath   TargetType = "Path"        // Some path from the base domain
-    TargetEp     TargetType = "Endpoint"    // A specific endpoint (like index.html)
-)
-
 type Target struct {
     Url     *url.URL
-    Facts   map[FactKey]FactValue           // The information we have learned
+    Facts   map[FactKey][]FactValue           // The information we have learned
 }
 
 type TargetMap struct {
@@ -55,20 +48,25 @@ func (tm *TargetMap) Pull(key string) *Target {
 func (tm *TargetMap) mergeTarget(new Target) {
     old := tm.tm[new.Key()]
 
-    for key, value := range new.Facts {
+    for key, values := range new.Facts {
         if _, ok := old.Facts[key]; !ok {
-            old.Facts[key] = value
+            old.Facts[key] = values
+            continue
         }
 
-        switch {
-        case key == IsAlive:
-            if old.Facts[key] == True && value == False {
-                old.Facts[HasDied] = True
-            } else if value == True {
-                old.Facts[key] = True
+        switch key {
+        case IsAlive:
+            if old.Facts[key][0] == True && values[0] == False {
+                old.Facts[HasDied] = []FactValue{True}
+            } else if values[0] == True {
+                old.Facts[key] = []FactValue{True}
             }
+        case Redirects:
+            old.AppendUniqueValues(key, values)
+        case Path:
+            old.AppendUniqueValues(key, values)
         default:
-            old.Facts[key] = value
+            old.Facts[key] = values
         }
     }
 }
@@ -88,7 +86,7 @@ func (tm *TargetMap) Push(target Target) {
     }
 }
 
-func (tm *TargetMap) PrettyFinding(key FactKey, value FactValue) string {
+func (tm *TargetMap) PrettyFinding(key FactKey, values []FactValue, space int) string {
     prettyKey := string(key)
     switch key {
     case "Redirects":
@@ -98,21 +96,54 @@ func (tm *TargetMap) PrettyFinding(key FactKey, value FactValue) string {
     default:
         prettyKey = pretty.Blue(prettyKey)
     }
-    return fmt.Sprintf("[%v: %v]", prettyKey, value)
+    prettyKey = "    | "+prettyKey+": "
+    // This only works for the regular colors
+    output := fmt.Sprintf("%*s%v", -17-space, prettyKey, values[0])
+    for _, v := range values[1:] {
+        output += fmt.Sprintf("\n%*s%v", -8-space, "    |", v)
+    }
+    return output
 }
 
 func (tm *TargetMap) PrintFindings() {
     log.Log(0, "\nFindings:\n")
     for _, tgt := range tm.tm {
-        log.Logf(0, "Target: %v\n", tgt.Url.String())
-        for key, value := range tgt.Facts {
-            log.Logf(0, "    %v\n", tm.PrettyFinding(key, value))
+        space := tgt.LongestKey()
+        log.Logf(0, "Target: %v\n", tgt.MyUrl())
+        for key, values := range tgt.Facts {
+            log.Logf(0, "%v\n", tm.PrettyFinding(key, values, space))
         }
     }
 }
 
+func (tgt *Target) AppendUniqueValues(key FactKey, values []FactValue) {
+    for _, v := range values {
+        if !slices.Contains(tgt.Facts[key], v) {
+            tgt.Facts[key] = append(tgt.Facts[key], v)
+        }
+    }
+}
+
+func (tgt *Target) LongestKey() int {
+    best := 0
+    for key, _ := range tgt.Facts {
+        if len(key) > best {
+            best = len(key)
+        }
+    }
+    return best
+}
+
+func (tgt *Target) MyUrl() string {
+    url := fmt.Sprintf("%v://%v", tgt.Url.Scheme, tgt.Url.Hostname())
+    if tgt.Url.Port() != "" {
+        url = fmt.Sprintf("%v:%v", url, tgt.Url.Port())
+    }
+    return url
+}
+
 func (tgt *Target) PrintFacts(v int, prefix string) {
-    for key, value := range tgt.Facts {
-        log.Logf(v, "%v%*s [%v: %v]\n", prefix, pretty.UrlWidth, tgt.Url.String(), key, value)
+    for key, values := range tgt.Facts {
+        log.Logf(v, "%v%*s [%v: %v]\n", prefix, pretty.UrlWidth, tgt.MyUrl(), key, values)
     }
 }

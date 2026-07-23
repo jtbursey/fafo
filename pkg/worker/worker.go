@@ -87,7 +87,7 @@ func (w *Worker) Loop(id uint, env *env.Env) {
             target := env.Targets.Pull(curJob.Target)
             if target == nil {
                 target = &fact.Target{
-                    Facts: make(map[fact.FactKey]fact.FactValue),
+                    Facts: make(map[fact.FactKey][]fact.FactValue),
                 }
                 if tmpUrl, err := url.Parse(fact.ChopSlash(curJob.Target)); err != nil {
                     w.Errf("Failed to parse Url from Job: %v: %v\n", curJob.Target, err)

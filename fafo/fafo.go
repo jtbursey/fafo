@@ -114,7 +114,7 @@ func main() {
 
     // Define the top-level target
     firstTarget := &fact.Target{
-        Facts: make(map[fact.FactKey]fact.FactValue),
+        Facts: make(map[fact.FactKey][]fact.FactValue),
     }
     var urlerr error
     if firstTarget.Url, urlerr = url.Parse(*flagURL); urlerr != nil {
