@@ -278,8 +278,8 @@ func (fam *Fam) buildJob(pyld []action.Payload, base *job.Job, target *fact.Targ
         Priority: base.Priority,
     }
 
-    base.Target = fam.fullReplace(pyld, target, base.Target)
-    if base.Target == "" {
+    newJob.Target = fam.fullReplace(pyld, target, base.Target)
+    if newJob.Target == "" {
         fam.Err("Unspecified Target for new job")
     }
 
