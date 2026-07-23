@@ -251,6 +251,8 @@ func (c *Chrome) ScreenShot(req *http.Request, env *env.Env) {
 
 func (c *Chrome) Loop(env *env.Env) {
     c.Log(7, "Chrome has Started\n")
+    defer c.inst.Cancel()
+    defer c.browserCancel()
     for {
         select {
         case req := <-env.ScrShCh:
