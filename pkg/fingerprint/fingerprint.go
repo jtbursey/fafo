@@ -30,6 +30,10 @@ const (
     NonEmpty           ConditionType = "NonEmpty"
 )
 
+var (
+    AllFields = []Field{FieldStatusCode, FieldUrl, FieldFuzzRecursive, FieldHdrLocation, FieldHdrAllow, FieldTautology}
+)
+
 // Field, Condition Value(s)
 type Condition struct {
     Field     Field                                 `json:"Field"`
@@ -49,7 +53,7 @@ type JobConditionPair struct {
     Jobs        []job.Job                           `json:"Jobs"`
 }
 
-func (f Field) Get(resp *http.Response, req *http.Request, base *fact.Target, cfg *config.Config) (string, error) {
+func (f Field) Get(resp *http.Response, req *http.Request, cfg *config.Config) (string, error) {
     switch f {
     case FieldStatusCode:
         return fmt.Sprintf("%v", resp.StatusCode), nil
@@ -97,17 +101,17 @@ func (c *Condition) doCompare(field string) bool {
     }
 }
 
-func (c *Condition) Evaluate(resp *http.Response, req *http.Request, base *fact.Target, cfg *config.Config) (bool, error) {
-    field, err := c.Field.Get(resp, req, base, cfg)
+func (c *Condition) Evaluate(resp *http.Response, req *http.Request, cfg *config.Config) (bool, error) {
+    field, err := c.Field.Get(resp, req, cfg)
     if err != nil {
         return false, err
     }
     return c.doCompare(field), nil
 }
 
-func (f *Fingerprint) Evaluate(resp *http.Response, req *http.Request, base *fact.Target, cfg *config.Config) (bool, error) {
+func (f *Fingerprint) Evaluate(resp *http.Response, req *http.Request, cfg *config.Config) (bool, error) {
     for _, c := range *f {
-        res, err := c.Evaluate(resp, req, base, cfg)
+        res, err := c.Evaluate(resp, req, cfg)
         if !res {
             return false, err
         }

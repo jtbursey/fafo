@@ -180,7 +180,7 @@ func (fam *Fam) channelPayloads(pylds []action.PayloadOrigin, e *env.Env) (int, 
     return count, nil
 }
 
-func (fam *Fam) payloadReplace(pyldList []action.Payload, origin string) string {
+func (fam *Fam) payloadReplace(origin string, pyldList []action.Payload) string {
     for _, pyld := range pyldList {
         if len(pyld.Id) > 0 && strings.Contains(origin, pyld.Id) {
             origin = strings.ReplaceAll(origin, pyld.Id, pyld.Pl)
@@ -190,7 +190,7 @@ func (fam *Fam) payloadReplace(pyldList []action.Payload, origin string) string 
     return origin
 }
 
-func (fam *Fam) baseReplace(base *fact.Target, origin string) (string, error) {
+func (fam *Fam) baseReplace(origin string, base *fact.Target) (string, error) {
     if strings.Contains(origin, "BASE") {
         origin = strings.ReplaceAll(origin, "BASE", base.Url.String())
     } else {
@@ -199,31 +199,42 @@ func (fam *Fam) baseReplace(base *fact.Target, origin string) (string, error) {
     return origin, nil
 }
 
-func (fam *Fam) fullReplace(pyldList []action.Payload, base *fact.Target, origin string) string {
-    origin, _ = fam.baseReplace(base, origin)
+func (fam *Fam) fieldReplace(origin string, resp *http.Response, req *http.Request, env *env.Env) string {
+    for _, field := range fingerprint.AllFields {
+        if strings.Contains(origin, string(field)) {
+            if val, err := fingerprint.Field(field).Get(resp, req, &env.Cfg); err == nil {
+                origin = strings.ReplaceAll(origin, string(field), val)
+            }
+        }
+    }
+    return origin
+}
+
+func (fam *Fam) fullReplace(origin string, pyldList []action.Payload, target *fact.Target) string {
+    origin, _ = fam.baseReplace(origin, target)
 
     if strings.Contains(origin, "CURRENT") {
-        origin = strings.ReplaceAll(origin, "CURRENT", base.Url.String())
+        origin = strings.ReplaceAll(origin, "CURRENT", target.Url.String())
     }
 
-    origin = fam.payloadReplace(pyldList, origin)
+    origin = fam.payloadReplace(origin, pyldList)
     return origin
 }
 
 func (fam *Fam) buildMethod(pyld []action.Payload, reqt *action.RequestTemplate) string {
-    return fam.payloadReplace(pyld, reqt.Method)
+    return fam.payloadReplace(reqt.Method, pyld)
 }
 
 func (fam *Fam) buildUrl(pyld []action.Payload, base *fact.Target, reqt *action.RequestTemplate) (*url.URL, error) {
     newUrl := reqt.Url
     var err error
-    if newUrl, err = fam.baseReplace(base, newUrl); err != nil {
+    if newUrl, err = fam.baseReplace(newUrl, base); err != nil {
         return nil, err
     }
 
-    ret, err := url.Parse(fam.payloadReplace(pyld, newUrl))
+    ret, err := url.Parse(fam.payloadReplace(newUrl, pyld))
     if err != nil {
-        return nil, fmt.Errorf("Failed to parse new Url: %v: %v\n", fam.payloadReplace(pyld, newUrl), err)
+        return nil, fmt.Errorf("Failed to parse new Url: %v: %v\n", fam.payloadReplace(newUrl, pyld), err)
     }
     return ret, nil
 }
@@ -233,7 +244,7 @@ func (fam *Fam) buildBodyReader(pyld []action.Payload, base *fact.Target, reqt *
         return nil
     }
     body := strings.Join(reqt.Body, "\r\n")
-    body = fam.payloadReplace(pyld, body)
+    body = fam.payloadReplace(body, pyld)
     body += "\r\n\r\n"
     return strings.NewReader(body)
 }
@@ -245,7 +256,7 @@ func (fam *Fam) buildHeader(pyld []action.Payload, reqt *action.RequestTemplate,
             header["User-Agent"] = []string{cfg.UserAgent}
             continue
         }
-        header[hdr] = append(header[hdr], fam.payloadReplace(pyld, val))
+        header[hdr] = append(header[hdr], fam.payloadReplace(val, pyld))
     }
 
     if reqt.Header == nil || reqt.Header["User-Agent"] == "" {
@@ -272,13 +283,15 @@ func (fam *Fam) buildRequest(pyld []action.Payload, base *fact.Target, reqt *act
     return req
 }
 
-func (fam *Fam) buildJob(pyld []action.Payload, base *job.Job, target *fact.Target) job.Job {
+func (fam *Fam) buildJob(baseJob *job.Job, pyld []action.Payload, target *fact.Target, resp *http.Response, req *http.Request, env *env.Env) job.Job {
     newJob := job.Job{
-        Action:   base.Action,
-        Priority: base.Priority,
+        Action:   baseJob.Action,
+        Priority: baseJob.Priority,
     }
 
-    newJob.Target = fam.fullReplace(pyld, target, base.Target)
+    // Do a Field replace as well
+    newJob.Target = fam.fullReplace(baseJob.Target, pyld, target)
+    newJob.Target = fam.fieldReplace(newJob.Target, resp, req, env)
     if newJob.Target == "" {
         fam.Err("Unspecified Target for new job")
     }
@@ -300,7 +313,7 @@ func (fam *Fam) handleResponse(pyld []action.Payload, resp *http.Response, req *
     }
 
     if !env.Cfg.DisableScreenShot && respAct.ScrShcond != nil {
-        b, err := respAct.ScrShcond.Evaluate(resp, req, base, &env.Cfg)
+        b, err := respAct.ScrShcond.Evaluate(resp, req, &env.Cfg)
         if err != nil {
             fam.Warnf("Failed to evaluation Screenshot condition: %v", err)
         }
@@ -320,16 +333,16 @@ func (fam *Fam) handleResponse(pyld []action.Payload, resp *http.Response, req *
 
     // Push Facts
     for _, pair := range respAct.Factcond {
-        b, err := pair.Fingerprint.Evaluate(resp, req, base, &env.Cfg)
+        b, err := pair.Fingerprint.Evaluate(resp, req, &env.Cfg)
         if err != nil {
             fam.Warnf("Failed to evaluation Fact condition: %v\n", err)
         }
         if b {
             for key, value := range pair.FactPair {
-                if val, err := fingerprint.Field(value).Get(resp, req, base, &env.Cfg); err == nil {
+                if val, err := fingerprint.Field(value).Get(resp, req, &env.Cfg); err == nil {
                     res.AppendUniqueValues(key, []fact.FactValue{fact.FactValue(val)})
                 } else {
-                    res.AppendUniqueValues(key, []fact.FactValue{fact.FactValue(fam.payloadReplace(pyld, string(value)))})
+                    res.AppendUniqueValues(key, []fact.FactValue{fact.FactValue(fam.payloadReplace(string(value), pyld))})
                 }
             }
         }
@@ -341,13 +354,13 @@ func (fam *Fam) handleResponse(pyld []action.Payload, resp *http.Response, req *
 
     // Push Jobs
     for _, pair := range respAct.Jobcond {
-        b, err := pair.Fingerprint.Evaluate(resp, req, base, &env.Cfg)
+        b, err := pair.Fingerprint.Evaluate(resp, req, &env.Cfg)
         if err != nil {
             fam.Warnf("Failed to evaluation Job condition: %v\n", err)
         }
         if b {
             for _, j := range pair.Jobs {
-                env.JobCh <- fam.buildJob(pyld, &j, &res)
+                env.JobCh <- fam.buildJob(&j, pyld, &res, resp, req, env)
             }
         }
     }
