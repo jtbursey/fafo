@@ -10,7 +10,10 @@
     ],
     "RequestTemplate": {
         "Method": "GET",
-        "UrlTemplate": "BASE/FUZZ"
+        "UrlTemplate": "BASE/FUZZ",
+        "Header": {
+            "User-Agent": "DEFAULT"
+        }
     },
     "ResponseAction": {
         "ScreenShotConditions": [
@@ -70,36 +73,6 @@
                         "Action": "FuzzDirectories",
                         "Priority": 5,
                         "Target": "CURRENT"
-                    }
-                ]
-            },
-            {
-                "Conditions": [
-                    {
-                        "Field": "StatusCode",
-                        "Condition": "OneOf",
-                        "Values": ["301"]
-                    },
-                    {
-                        "Field": "FuzzRecursive",
-                        "Condition": "Equals",
-                        "Values": ["true"]
-                    },
-                    {
-                        "Field": "HdrLocation",
-                        "Condition": "NonEmpty"
-                    }
-                ],
-                "Jobs": [
-                    {
-                        "Action": "FuzzFiles",
-                        "Priority": 5,
-                        "Target": "HdrLocation"
-                    },
-                    {
-                        "Action": "FuzzDirectories",
-                        "Priority": 5,
-                        "Target": "HdrLocation"
                     }
                 ]
             }

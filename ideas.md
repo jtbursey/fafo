@@ -17,3 +17,4 @@
 - subdommain enum
 - scan various TLS headers
 - Signal repeated errors to quit
+- scan robots.txt/humans.txt

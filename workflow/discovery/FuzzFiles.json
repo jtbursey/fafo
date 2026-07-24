@@ -10,7 +10,10 @@
     ],
     "RequestTemplate": {
         "Method": "GET",
-        "UrlTemplate": "BASE/FUZZ"
+        "UrlTemplate": "BASE/FUZZ",
+        "Header": {
+            "User-Agent": "DEFAULT"
+        }
     },
     "ResponseAction": {
         "ScreenShotConditions": [

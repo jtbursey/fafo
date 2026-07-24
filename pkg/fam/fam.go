@@ -251,6 +251,7 @@ func (fam *Fam) buildBodyReader(pyld []action.Payload, base *fact.Target, reqt *
 
 func (fam *Fam) buildHeader(pyld []action.Payload, reqt *action.RequestTemplate, cfg *httpclient.HttpCfg) map[string][]string {
     header := make(map[string][]string)
+    //header["Connection"] = []string{"close"}
     for hdr, val := range reqt.Header {
         if hdr == "User-Agent" && val == "DEFAULT" {
             header["User-Agent"] = []string{cfg.UserAgent}
