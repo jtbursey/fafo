@@ -15,6 +15,7 @@ const (
     Exists    FactKey = "Exists"
     Redirects FactKey = "Redirects"
     Path      FactKey = "Path"
+    Login     FactKey = "Login"
 )
 
 var (

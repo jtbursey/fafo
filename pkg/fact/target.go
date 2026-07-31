@@ -65,6 +65,8 @@ func (tm *TargetMap) mergeTarget(new Target) {
             old.AppendUniqueValues(key, values)
         case Path:
             old.AppendUniqueValues(key, values)
+        case Login:
+            old.AppendUniqueValues(key, values)
         default:
             old.Facts[key] = values
         }
