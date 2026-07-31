@@ -101,7 +101,7 @@ func (tm *TargetMap) PrettyFinding(key FactKey, values []FactValue, space int) s
     colorlen = len(prettyKey) - originlen
     output := fmt.Sprintf("    | %v: %v", prettyKey, values[0])
     for _, v := range values[1:] {
-        output += fmt.Sprintf("\n%*s%v", -colorlen-originlen, "    |", v)
+        output += fmt.Sprintf("\n%*s%v", -2-colorlen-originlen, "    |", v)
     }
     return output
 }
