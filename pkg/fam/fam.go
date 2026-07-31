@@ -25,6 +25,15 @@ import (
 	"fafo/pkg/pretty"
 )
 
+const (
+    VError int = log.VError
+    VWarn  int = log.VWarn
+
+    VPos   int = log.V0
+    V404   int = log.V1
+    VOther int = log.V2
+)
+
 var (
     // Defaults from ffuf
     aliveValid = []int {200, 204, 301, 302, 307, 401, 405}
@@ -37,12 +46,15 @@ type Fam struct {
     wg     sync.WaitGroup
 }
 
-func (fam *Fam) Logf(v int, msg string, args ...any) {
-    prefix := ""
-    if log.Verb(3) {
-        prefix = fmt.Sprintf("%*s", pretty.PrefixWidth, fmt.Sprintf("[%v]: ", fam.Caller))
+func (fam *Fam) prefix() string {
+    if log.Verb(log.VPrefix) {
+        return fmt.Sprintf("%*s", pretty.PrefixWidth, fmt.Sprintf("[%v]: ", fam.Caller))
     }
-    log.Logf(v, prefix+msg, args...)
+    return ""
+}
+
+func (fam *Fam) Logf(v int, msg string, args ...any) {
+    log.Logf(v, fam.prefix()+msg, args...)
 }
 
 func (fam *Fam) Log(v int, msg string) {
@@ -50,7 +62,7 @@ func (fam *Fam) Log(v int, msg string) {
 }
 
 func (fam *Fam) Errf(msg string, args ...any) {
-    log.Logf(0, fmt.Sprintf("%*s%v: %v", pretty.PrefixWidth, fmt.Sprintf("[%v]: ", fam.Caller), pretty.Orange("Error"), msg), args...)
+    log.Logf(VError, fmt.Sprintf("%v%v: %v", fam.prefix(), pretty.Orange("Error"), msg), args...)
 }
 
 func (fam *Fam) Err(msg string) {
@@ -58,7 +70,7 @@ func (fam *Fam) Err(msg string) {
 }
 
 func (fam *Fam) Warnf(msg string, args ...any) {
-    log.Logf(2, fmt.Sprintf("%*s%v: %v", pretty.PrefixWidth, fmt.Sprintf("[%v]: ", fam.Caller), pretty.Orange("Warning"), msg), args...)
+    log.Logf(VWarn, fmt.Sprintf("%v%v: %v", fam.prefix(), pretty.Orange("Warning"), msg), args...)
 }
 
 func (fam *Fam) Init(env *env.Env) {
@@ -341,12 +353,12 @@ func (fam *Fam) handleResponse(pyld []action.Payload, resp *http.Response, req *
 
     // TODO: print the payloads here
     if len(res.Facts) > 0 {
-        fam.Logf(0, "%v\n", pretty.Response(resp, req.URL.String()))
+        fam.Logf(VPos, "%v\n", pretty.Response(resp, req.URL.String()))
         env.FactCh <- res
     } else if resp.StatusCode != 404 {
-        fam.Logf(1, "%v\n", pretty.Response(resp, req.URL.String()))
+        fam.Logf(V404, "%v\n", pretty.Response(resp, req.URL.String()))
     } else {
-        fam.Logf(2, "%v\n", pretty.Response(resp, res.Url.String()))
+        fam.Logf(VOther, "%v\n", pretty.Response(resp, res.Url.String()))
     }
 
     // Push Jobs

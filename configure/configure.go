@@ -15,8 +15,12 @@ var (
     flagConfig = flag.String("config", config.DefaultConfigFile, "The `Config File` to use")
 )
 
+var (
+    V0 int = log.V0
+)
+
 func main() {
-    log.SetVerb(2)
+    log.SetVerb(config.VPayloads)
     flag.Parse()
 
     log.Greeting("Configuring...")
@@ -48,13 +52,13 @@ func main() {
         return
     }
 
-    log.Log(0, "\n")
+    log.Log(V0, "\n")
     env.Debug()
 
     if err := env.Cfg.WritePayloadsJSON(); err != nil {
-        log.Log(0, "Configuration Failed.\n")
+        log.Err("Configuration Failed.\n")
         return
     }
-    log.Logf(0, "Payloads written to %v\n", env.Cfg.PayloadSrc)
-    log.Log(0, "Configured.\n")
+    log.Logf(V0, "Payloads written to %v\n", env.Cfg.PayloadSrc)
+    log.Log(V0, "Configured.\n")
 }

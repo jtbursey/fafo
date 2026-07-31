@@ -15,6 +15,12 @@ import (
     "fafo/pkg/semaphore"
 )
 
+const (
+    VError  int = log.V0
+    VDebug  int = log.V0
+    VClient int = log.V8
+)
+
 type HttpCfg struct {
     UserAgent  string        `json:"UserAgent"`
     // TODO: Figure out a way to unmarshall json to url
@@ -32,11 +38,15 @@ type HttpClient struct {
     slowdown    time.Duration
 }
 
-func (c HttpClient) Logf(v int, msg string, args ...any) {
-    if log.Verb(v) {
-        log.Logf(3, "%*s", pretty.PrefixWidth, "[Client]: ")
-        log.Logf(v, msg, args...)
+func (c HttpClient) prefix() string {
+    if log.Verb(log.VPrefix) {
+        return fmt.Sprintf("%*s", pretty.PrefixWidth, "[Client]: ")
     }
+    return ""
+}
+
+func (c HttpClient) Logf(v int, msg string, args ...any) {
+    log.Logf(v, c.prefix()+msg, args...)
 }
 
 func (c HttpClient) Log(v int, msg string) {
@@ -44,7 +54,7 @@ func (c HttpClient) Log(v int, msg string) {
 }
 
 func (c HttpClient) Errf(msg string, args ...any) {
-    log.Logf(0, fmt.Sprintf("%*s%v: %v", pretty.PrefixWidth, "[Client]: ", pretty.Orange("Error"), msg), args...)
+    log.Logf(VError, fmt.Sprintf("%v%v: %v", c.prefix(), pretty.Orange("Error"), msg), args...)
 }
 
 func DefaultConfig() *HttpCfg {
@@ -69,13 +79,13 @@ func (c *HttpCfg) PostParse() {
 
 func (c *HttpCfg) Debug() {
     if c.Proxy != nil {
-        log.Logf(0, "%v\n", pretty.Config("Proxy", c.Proxy.String()))
+        log.Logf(VDebug, "%v\n", pretty.Config("Proxy", c.Proxy.String()))
     }
-    log.Logf(0, "%v\n", pretty.Config("MaxCalls", c.MaxCalls))
-    log.Logf(0, "%v\n", pretty.Config("Slowdown", c.Slowdown))
-    log.Logf(0, "%v\n", pretty.Config("Timeout", c.Timeout))
-    log.Logf(0, "%v\n", pretty.Config("FollowRedirects", c.doRedirect))
-    log.Logf(0, "%v\n", pretty.Config("UserAgent", c.UserAgent))
+    log.Logf(VDebug, "%v\n", pretty.Config("MaxCalls", c.MaxCalls))
+    log.Logf(VDebug, "%v\n", pretty.Config("Slowdown", c.Slowdown))
+    log.Logf(VDebug, "%v\n", pretty.Config("Timeout", c.Timeout))
+    log.Logf(VDebug, "%v\n", pretty.Config("FollowRedirects", c.doRedirect))
+    log.Logf(VDebug, "%v\n", pretty.Config("UserAgent", c.UserAgent))
 }
 
 func New(cfg HttpCfg) *HttpClient {
@@ -123,7 +133,7 @@ func (c *HttpClient) ReturnSem() {
 
 func (c *HttpClient) Call(req *http.Request) *http.Response {
     c.sem.Acquire()
-    c.Logf(7, "Calling %v\n", req.URL)
+    c.Logf(VClient, "Calling %v\n", req.URL)
     resp, err := c.client.Do(req)
     go c.doSlowdown()
     if err != nil {
@@ -131,6 +141,6 @@ func (c *HttpClient) Call(req *http.Request) *http.Response {
         return nil
     }
 
-    c.Logf(4, "Response: %v\n", resp.Status)
+    c.Logf(VClient, "Response: %v\n", resp.Status)
     return resp
 }

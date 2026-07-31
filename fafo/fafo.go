@@ -39,8 +39,12 @@ var (
     flagAction  = flag.String("a", DefaultAction, "The first `Action` to carry out")
 )
 
+var (
+    VAlways int = log.V0
+)
+
 func mgrPrefix() string {
-    if log.Verb(3) {
+    if log.Verb(log.VPrefix) {
         return fmt.Sprintf("%*s", pretty.PrefixWidth, "[Manager]: ")
     }
     return ""
@@ -168,7 +172,7 @@ func main() {
         }
         go chrm.Loop(env)
     } else {
-        log.Log(0, "Screenshots are Disabled\n")
+        log.Log(VAlways, "Screenshots are Disabled\n")
         env.Cfg.DisableScreenShot = true
     }
 
@@ -181,7 +185,7 @@ func main() {
     env.Jobqueue.Push(firstJob)
     Loop(env)
     chrm.SignalDone()
-    log.Logf(0, "%vAll jobs completed.\n", mgrPrefix())
+    log.Logf(VAlways, "%vAll jobs completed.\n", mgrPrefix())
 
 
     // TODO: Findings to output dir

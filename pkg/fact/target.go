@@ -13,6 +13,10 @@ import (
     "fafo/pkg/pretty"
 )
 
+const (
+    VAlways int = log.V0
+)
+
 type Target struct {
     Url     *url.URL
     Facts   map[FactKey][]FactValue           // The information we have learned
@@ -103,12 +107,12 @@ func (tm *TargetMap) PrettyFinding(key FactKey, values []FactValue, space int) s
 }
 
 func (tm *TargetMap) PrintFindings() {
-    log.Log(0, "\nFindings:\n")
+    log.Log(VAlways, "\nFindings:\n")
     for _, tgt := range tm.tm {
         space := tgt.LongestKey()
-        log.Logf(0, "Target: %v\n", tgt.Url.String())
+        log.Logf(VAlways, "Target: %v\n", tgt.Url.String())
         for key, values := range tgt.Facts {
-            log.Logf(0, "%v\n", tm.PrettyFinding(key, values, space))
+            log.Logf(VAlways, "%v\n", tm.PrettyFinding(key, values, space))
         }
     }
 }

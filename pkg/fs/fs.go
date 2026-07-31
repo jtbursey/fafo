@@ -50,13 +50,13 @@ func GetFileFromStdio(msg string) string {
     var filename string
     stdin := bufio.NewReader(os.Stdin)
     for {
-        log.Logf(0, "%v: ", msg)
+        log.Logf(log.V0, "%v: ", msg)
         filename, _ = stdin.ReadString('\n')
         filename = chomp(filename)
         if Exists(filename) {
             break
         } else {
-            log.Logf(0, "File/directory \"%v\" does not exist! Try again?\n", filename)
+            log.Logf(log.V0, "File/directory \"%v\" does not exist! Try again?\n", filename)
         }
     }
     return filename

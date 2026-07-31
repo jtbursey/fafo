@@ -17,6 +17,10 @@ const (
     DefaultConfigFile   string = "profiles/default.cfg"
     DefaultPayloadsFile string = "workflow/payloads.json"
     DefaultFindingsDir  string = "findings"
+
+    VAlways   int = log.V0
+    VDebug    int = log.V0
+    VPayloads int = log.V2
 )
 
 var (
@@ -88,7 +92,7 @@ func (c *Config) GetAsFilename(fn string) (string, error) {
 
 func (c *Config) NeedSeclists() string {
     if len(c.Seclists) <= 0 || !fs.Exists(c.Seclists) {
-        log.Logf(0, "Config \"Seclists\" is not set yet. It can be optionally set in %v.\n", c.SelfFile)
+        log.Logf(VAlways, "Config \"Seclists\" is not set yet. It can be optionally set in %v.\n", c.SelfFile)
         c.Seclists = fs.GetFileFromStdio("Path to SecLists")
     }
     return c.Seclists
@@ -135,15 +139,15 @@ func (c *Config) WritePayloadsJSON() error {
 
 func (c *Config) Debug() {
     if c.FindingsDir != "" {
-        log.Logf(0, "%v\n", pretty.Config("Output", c.FindingsDir))
+        log.Logf(VDebug, "%v\n", pretty.Config("Output", c.FindingsDir))
     }
-    log.Logf(0, "%v\n", pretty.Config("Workers", c.NumWorkers))
-    log.Logf(0, "%v\n", pretty.Config("FuzzRecursive", c.FuzzRecursive))
+    log.Logf(VDebug, "%v\n", pretty.Config("Workers", c.NumWorkers))
+    log.Logf(VDebug, "%v\n", pretty.Config("FuzzRecursive", c.FuzzRecursive))
 
     c.ClientCfg.Debug()
 
-    log.Logf(2, "\n%v\n", pretty.Config("Payloads", c.PayloadSrc))
+    log.Logf(VPayloads, "\n%v\n", pretty.Config("Payloads", c.PayloadSrc))
     for key, value := range c.PayloadFiles {
-        log.Logf(2, "%v\n", pretty.Config("  "+key, value))
+        log.Logf(VPayloads, "%v\n", pretty.Config("  "+key, value))
     }
 }

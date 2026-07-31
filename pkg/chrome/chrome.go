@@ -21,6 +21,10 @@ import (
     "fafo/pkg/pretty"
 )
 
+const (
+    VClient int = log.V8
+)
+
 type Chrome struct {
     inst          *instance
     browserCtx    context.Context
@@ -129,7 +133,7 @@ func NewChrome(env *env.Env) *Chrome {
 
 func (c *Chrome) prefix() string {
     prefix := ""
-    if log.Verb(3) {
+    if log.Verb(log.VPrefix) {
         prefix = fmt.Sprintf("%*s", pretty.PrefixWidth, "[Chrome]: ")
     }
     return prefix
@@ -144,11 +148,7 @@ func (c *Chrome) Log(v int, msg string) {
 }
 
 func (c *Chrome) Errf(msg string, args ...any) {
-    pre := ""
-    if len(c.prefix()) > 0 {
-        pre = fmt.Sprintf("%*s", pretty.PrefixWidth, c.prefix())
-    }
-    log.Logf(0, fmt.Sprintf("%v%v: %v", pre, pretty.Orange("Error"), msg), args...)
+    log.Logf(log.VError, fmt.Sprintf("%v%v: %v", c.prefix(), pretty.Orange("Error"), msg), args...)
 }
 
 func (c *Chrome) Err(msg string) {
@@ -184,6 +184,7 @@ func (c *Chrome) craftPathname(req *http.Request, env *env.Env) string {
 func (c *Chrome) ScreenShot(req *http.Request, env *env.Env) {
     // Borrowing here because somehthing times out if I make the context and then wait.
     env.Client.BorrowSem()
+    c.Logf(VClient, "Calling %v\n", req.URL.String())
     tabCtx, tabCancel := chromedp.NewContext(c.browserCtx)
     defer tabCancel()
 
@@ -235,7 +236,7 @@ func (c *Chrome) ScreenShot(req *http.Request, env *env.Env) {
         return
     }
 
-    c.Logf(0, "%v\n", pretty.Screenshot(req.URL.String(), filename))
+    c.Logf(log.V0, "%v\n", pretty.Screenshot(req.URL.String(), filename))
 
     // An option:
     // decoded, _, err := image.Decode(bytes.NewReader(img))
@@ -250,7 +251,7 @@ func (c *Chrome) ScreenShot(req *http.Request, env *env.Env) {
 }
 
 func (c *Chrome) Loop(env *env.Env) {
-    c.Log(7, "Chrome has Started\n")
+    c.Log(VClient, "Chrome has Started\n")
     defer c.inst.Cancel()
     defer c.browserCancel()
     for {

@@ -20,6 +20,9 @@ import (
 
 const (
     DefaultWorkflowDir string = "workflow/"
+
+    VAlways int = log.V0
+    VDebug  int = log.V0
 )
 
 type Env struct {
@@ -36,10 +39,10 @@ type Env struct {
 
 func (env *Env) Debug() {
     if env.FirstTarget.Url != nil {
-        log.Logf(0, "%v\n", pretty.Config("Target", env.FirstTarget.Url.String()))
+        log.Logf(VDebug, "%v\n", pretty.Config("Target", env.FirstTarget.Url.String()))
     }
     env.Cfg.Debug()
-    log.Log(0, "\n\n")
+    log.Log(VDebug, "\n\n")
 }
 
 func (env *Env) parseActionsInDir(dir string) error {
@@ -88,11 +91,11 @@ func (env *Env) ParseActions() error {
 
 func (env *Env) FixPayloadFile(pyld action.PayloadOrigin, act *action.Action) error {
     if def, ok := config.DefaulSeclistFiles[pyld.File]; ok {
-        log.Logf(0, "\"%v\" has a default SecLists file. Using default: \"%v\"\n", pyld.File, def)
+        log.Logf(VAlways, "\"%v\" has a default SecLists file. Using default: \"%v\"\n", pyld.File, def)
         seclists := env.Cfg.NeedSeclists()
         env.Cfg.PayloadFiles[pyld.File] = filepath.Join(seclists, def)
     } else {
-        log.Logf(0, "Treating \"%v\" as a key that has not been defined.\n", pyld.File)
+        log.Logf(VAlways, "Treating \"%v\" as a key that has not been defined.\n", pyld.File)
         filename := fs.GetFileFromStdio("Path to payload file")
         env.Cfg.PayloadFiles[pyld.File] = filename
     }
@@ -107,7 +110,7 @@ func (env *Env) ValidateAction(act *action.Action) error {
     for _, pyld := range act.Pylds {
         if pyld.File != "" {
             if _, err := env.Cfg.GetAsFilename(pyld.File); err != nil {
-                log.Logf(0, "Payload file \"%v\" (%v) is not a valid file or defined key.\n", pyld.File, act.Id)
+                log.Logf(VAlways, "Payload file \"%v\" (%v) is not a valid file or defined key.\n", pyld.File, act.Id)
                 env.FixPayloadFile(pyld, act)
             }
         }

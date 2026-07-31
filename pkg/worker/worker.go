@@ -20,6 +20,11 @@ const (
     StatusStartup WorkerStatus = "startup"
     StatusIdle    WorkerStatus = "idle"
     StatusWorking WorkerStatus = "working"
+
+    VError  int = log.VError
+    VWarn   int = log.VError
+    VMode   int = log.V3
+    VStatus int = log.V7
 )
 
 type Worker struct {
@@ -32,12 +37,15 @@ func (w *Worker) IdString() string {
     return fmt.Sprintf("Worker %v", w.id)
 }
 
-func (w *Worker) Logf(v int, msg string, args ...any) {
-    prefix := ""
-    if log.Verb(3) {
-        prefix = fmt.Sprintf("%*s", pretty.PrefixWidth, fmt.Sprintf("[%v]: ", w.IdString()))
+func (w *Worker) prefix() string {
+    if log.Verb(log.VPrefix) {
+        return fmt.Sprintf("%*s", pretty.PrefixWidth, fmt.Sprintf("[%v]: ", w.IdString()))
     }
-    log.Logf(v, prefix+msg, args...)
+    return ""
+}
+
+func (w *Worker) Logf(v int, msg string, args ...any) {
+    log.Logf(v, w.prefix()+msg, args...)
 }
 
 func (w *Worker) Log(v int, msg string) {
@@ -45,17 +53,21 @@ func (w *Worker) Log(v int, msg string) {
 }
 
 func (w *Worker) Errf(msg string, args ...any) {
-    log.Logf(0, fmt.Sprintf("%*s%v: %v", pretty.PrefixWidth, fmt.Sprintf("[Worker %v]: ", w.id), pretty.Orange("Error"), msg), args...)
+    log.Logf(VError, fmt.Sprintf("%v%v: %v", w.prefix(), pretty.Orange("Error"), msg), args...)
+}
+
+func (w *Worker) Warnf(msg string, args ...any) {
+    log.Logf(VWarn, fmt.Sprintf("%v%v: %v", w.prefix(), pretty.Orange("Warning"), msg), args...)
 }
 
 func (w *Worker) newStatus(status WorkerStatus) {
     w.status = status
-    w.Logf(3, "New status: %v\n", w.status)
+    w.Logf(VStatus, "New status: %v\n", w.status)
 }
 
 func (w *Worker) newMode(mode job.WorkerMode) {
     w.mode = mode
-    w.Logf(3, "Switching to %v mode\n", w.mode)
+    w.Logf(VMode, "Switching to %v mode\n", w.mode)
 }
 
 func (w *Worker) resetMode() {
@@ -70,7 +82,7 @@ func (w *Worker) dispatch(job *job.Job, t *fact.Target, env *env.Env) {
         }
         f.Run(t, &action, env)
     } else {
-        w.Logf(0, "Found unimplemented Job Action: %v\n", job.Action)
+        w.Warnf("Found unimplemented Job Action: %v\n", job.Action)
     }
     w.resetMode()
 }
