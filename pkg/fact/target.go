@@ -85,6 +85,7 @@ func (tm *TargetMap) Push(target Target) {
 func (tm *TargetMap) PrettyFinding(key FactKey, values []FactValue, space int) string {
     prettyKey := string(key)
     originlen := len(prettyKey)
+    colorlen := 0
     switch key {
     case "Redirects":
         prettyKey = pretty.Yellow(prettyKey)
@@ -93,9 +94,10 @@ func (tm *TargetMap) PrettyFinding(key FactKey, values []FactValue, space int) s
     default:
         prettyKey = pretty.Blue(prettyKey)
     }
+    colorlen = len(prettyKey) - originlen
     output := fmt.Sprintf("    | %v: %v", prettyKey, values[0])
     for _, v := range values[1:] {
-        output += fmt.Sprintf("\n%*s%v", -8-originlen, "    |", v)
+        output += fmt.Sprintf("\n%*s%v", -colorlen-originlen, "    |", v)
     }
     return output
 }

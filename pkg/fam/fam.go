@@ -323,15 +323,6 @@ func (fam *Fam) handleResponse(pyld []action.Payload, resp *http.Response, req *
         }
     }
 
-    // TODO: print the payloads here
-    if slices.Contains(aliveValid, resp.StatusCode) {
-        fam.Logf(0, "%v\n", pretty.Response(resp, req.URL.String()))
-    } else if resp.StatusCode != 404 {
-        fam.Logf(1, "%v\n", pretty.Response(resp, req.URL.String()))
-    } else {
-        fam.Logf(2, "%v\n", pretty.Response(resp, res.Url.String()))
-    }
-
     // Push Facts
     for _, pair := range respAct.Factcond {
         b, err := pair.Fingerprint.Evaluate(resp, req, &env.Cfg)
@@ -349,8 +340,14 @@ func (fam *Fam) handleResponse(pyld []action.Payload, resp *http.Response, req *
         }
     }
 
+    // TODO: print the payloads here
     if len(res.Facts) > 0 {
+        fam.Logf(0, "%v\n", pretty.Response(resp, req.URL.String()))
         env.FactCh <- res
+    } else if resp.StatusCode != 404 {
+        fam.Logf(1, "%v\n", pretty.Response(resp, req.URL.String()))
+    } else {
+        fam.Logf(2, "%v\n", pretty.Response(resp, res.Url.String()))
     }
 
     // Push Jobs
