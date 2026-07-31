@@ -61,14 +61,8 @@ func (tm *TargetMap) mergeTarget(new Target) {
             } else if values[0] == True {
                 old.Facts[key] = []FactValue{True}
             }
-        case Redirects:
-            old.AppendUniqueValues(key, values)
-        case Path:
-            old.AppendUniqueValues(key, values)
-        case Login:
-            old.AppendUniqueValues(key, values)
         default:
-            old.Facts[key] = values
+            old.AppendUniqueValues(key, values)
         }
     }
 }
