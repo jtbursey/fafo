@@ -17,9 +17,7 @@ import (
 	"fafo/pkg/action"
 	"fafo/pkg/env"
 	"fafo/pkg/fact"
-    "fafo/pkg/fingerprint"
 	"fafo/pkg/fs"
-	"fafo/pkg/httpclient"
 	"fafo/pkg/job"
 	"fafo/pkg/log"
 	"fafo/pkg/pretty"
@@ -40,10 +38,10 @@ var (
 )
 
 type Fam struct {
-    Caller string                // Id of whoever called this (i.e. "Worker 0")
-    plch   chan []action.Payload
-    signal bool
-    wg     sync.WaitGroup
+    Caller     string                // Id of whoever called this (i.e. "Worker 0")
+    plch       chan []action.Payload
+    signal     bool
+    wg         sync.WaitGroup
 }
 
 func (fam *Fam) prefix() string {
@@ -191,119 +189,72 @@ func (fam *Fam) channelPayloads(pylds []action.PayloadOrigin, e *env.Env) (int, 
     return count, nil
 }
 
-func (fam *Fam) payloadReplace(origin string, pyldList []action.Payload) string {
-    for _, pyld := range pyldList {
-        if len(pyld.Id) > 0 && strings.Contains(origin, pyld.Id) {
-            origin = strings.ReplaceAll(origin, pyld.Id, pyld.Pl)
-        }
-    }
-    
-    return origin
+func (fam *Fam) buildMethod(reqt *action.RequestTemplate, ds *Data) string {
+    return ds.Replace(reqt.Method)
 }
 
-func (fam *Fam) baseReplace(origin string, base *fact.Target) (string, error) {
-    if strings.Contains(origin, "BASE") {
-        origin = strings.ReplaceAll(origin, "BASE", base.Url.String())
-    } else {
-        return origin, fmt.Errorf("No BASE in Url Template: %v", origin)
-    }
-    return origin, nil
-}
-
-func (fam *Fam) fieldReplace(origin string, resp *http.Response, req *http.Request, env *env.Env) string {
-    for _, field := range fingerprint.AllFields {
-        if strings.Contains(origin, string(field)) {
-            if val, err := fingerprint.Field(field).Get(resp, req, &env.Cfg); err == nil {
-                origin = strings.ReplaceAll(origin, string(field), val)
-            }
-        }
-    }
-    return origin
-}
-
-func (fam *Fam) fullReplace(origin string, pyldList []action.Payload, target *fact.Target) string {
-    origin, _ = fam.baseReplace(origin, target)
-
-    if strings.Contains(origin, "CURRENT") {
-        origin = strings.ReplaceAll(origin, "CURRENT", target.Url.String())
-    }
-
-    origin = fam.payloadReplace(origin, pyldList)
-    return origin
-}
-
-func (fam *Fam) buildMethod(pyld []action.Payload, reqt *action.RequestTemplate) string {
-    return fam.payloadReplace(reqt.Method, pyld)
-}
-
-func (fam *Fam) buildUrl(pyld []action.Payload, base *fact.Target, reqt *action.RequestTemplate) (*url.URL, error) {
-    newUrl := reqt.Url
-    var err error
-    if newUrl, err = fam.baseReplace(newUrl, base); err != nil {
-        return nil, err
-    }
-
-    ret, err := url.Parse(fam.payloadReplace(newUrl, pyld))
+func (fam *Fam) buildUrl(reqt *action.RequestTemplate, ds *Data) (*url.URL, error) {
+    newUrl := ds.Replace(reqt.Url)
+    ret, err := url.Parse(newUrl)
     if err != nil {
-        return nil, fmt.Errorf("Failed to parse new Url: %v: %v\n", fam.payloadReplace(newUrl, pyld), err)
+        return nil, fmt.Errorf("Failed to parse new Url: %v: %v\n", newUrl, err)
     }
     return ret, nil
 }
 
-func (fam *Fam) buildBodyReader(pyld []action.Payload, base *fact.Target, reqt *action.RequestTemplate) io.Reader {
+func (fam *Fam) buildBodyReader(reqt *action.RequestTemplate, ds *Data) io.Reader {
     if reqt.Body == nil {
         return nil
     }
     body := strings.Join(reqt.Body, "\r\n")
-    body = fam.payloadReplace(body, pyld)
+    body = ds.Replace(body)
     body += "\r\n\r\n"
     return strings.NewReader(body)
 }
 
-func (fam *Fam) buildHeader(pyld []action.Payload, reqt *action.RequestTemplate, cfg *httpclient.HttpCfg) map[string][]string {
+func (fam *Fam) buildHeader(reqt *action.RequestTemplate, ds *Data) map[string][]string {
     header := make(map[string][]string)
     //header["Connection"] = []string{"close"}
     for hdr, val := range reqt.Header {
         if hdr == "User-Agent" && val == "DEFAULT" {
-            header["User-Agent"] = []string{cfg.UserAgent}
+            header["User-Agent"] = []string{ds.Config.ClientCfg.UserAgent}
             continue
         }
-        header[hdr] = append(header[hdr], fam.payloadReplace(val, pyld))
+        header[hdr] = append(header[hdr], ds.Replace(val))
     }
 
     if reqt.Header == nil || reqt.Header["User-Agent"] == "" {
-        header["User-Agent"] = []string{cfg.UserAgent}
+        header["User-Agent"] = []string{ds.Config.ClientCfg.UserAgent}
     }
 
     return header
 }
 
 // For now the request is simple. No need for much
-func (fam *Fam) buildRequest(pyld []action.Payload, base *fact.Target, reqt *action.RequestTemplate, env *env.Env) *http.Request {
-    url, err := fam.buildUrl(pyld, base, reqt)
+func (fam *Fam) buildRequest(reqt *action.RequestTemplate, ds *Data) *http.Request {
+    url, err := fam.buildUrl(reqt, ds)
     if err != nil {
         fam.Errf("%v\n", err)
         return nil
     }
-    req, _ := http.NewRequest(fam.buildMethod(pyld, reqt), url.String(), fam.buildBodyReader(pyld, base, reqt))
+    req, _ := http.NewRequest(fam.buildMethod(reqt, ds), url.String(), fam.buildBodyReader(reqt, ds))
     if req == nil {
-        fam.Errf("Failed to build request for %v (Base: %v)\n", url.String(), base.Url.String())
+        fam.Errf("Failed to build request for %v\n", url.String())
         return nil
     }
 
-    req.Header = fam.buildHeader(pyld, reqt, &env.Cfg.ClientCfg)
+    req.Header = fam.buildHeader(reqt, ds)
     return req
 }
 
-func (fam *Fam) buildJob(baseJob *job.Job, pyld []action.Payload, target *fact.Target, resp *http.Response, req *http.Request, env *env.Env) job.Job {
+func (fam *Fam) buildJob(baseJob *job.Job, ds *Data) job.Job {
     newJob := job.Job{
         Action:   baseJob.Action,
         Priority: baseJob.Priority,
     }
 
     // Do a Field replace as well
-    newJob.Target = fam.fullReplace(baseJob.Target, pyld, target)
-    newJob.Target = fam.fieldReplace(newJob.Target, resp, req, env)
+    newJob.Target = ds.Replace(baseJob.Target)
     if newJob.Target == "" {
         fam.Err("Unspecified Target for new job")
     }
@@ -311,73 +262,72 @@ func (fam *Fam) buildJob(baseJob *job.Job, pyld []action.Payload, target *fact.T
     return newJob
 }
 
-func (fam *Fam) handleResponse(pyld []action.Payload, resp *http.Response, req *http.Request, base *fact.Target, respAct *action.ResponseAction, env *env.Env) {
+func (fam *Fam) handleResponse(respAct *action.ResponseAction, ds *Data, env *env.Env) {
     // Until we actually parse the body...
-    _, err := io.ReadAll(resp.Body)
-    resp.Body.Close()
+    _, err := io.ReadAll(ds.Response.Body)
+    ds.Response.Body.Close()
     if err != nil {
         fam.Warnf("Unexpected error in reading response body: %v\n", err)
     }
 
     res := fact.Target{
-        Url:   resp.Request.URL, // Use the final URL
+        Url:   ds.Response.Request.URL, // Use the final URL
         Facts: make(map[fact.FactKey][]fact.FactValue),
     }
 
-    if !env.Cfg.DisableScreenShot && respAct.ScrShcond != nil {
-        b, err := respAct.ScrShcond.Evaluate(resp, req, &env.Cfg)
+    if !ds.Config.DisableScreenShot && respAct.ScrShcond != nil {
+        b, err := respAct.ScrShcond.Evaluate(ds.Response, ds.Request, ds.Config)
         if err != nil {
             fam.Warnf("Failed to evaluation Screenshot condition: %v", err)
         }
         if b {
-            env.ScrShCh <- *resp.Request
+            env.ScrShCh <- *ds.Response.Request
         }
     }
 
     // Push Facts
     for _, pair := range respAct.Factcond {
-        b, err := pair.Fingerprint.Evaluate(resp, req, &env.Cfg)
+        b, err := pair.Fingerprint.Evaluate(ds.Response, ds.Request, ds.Config)
         if err != nil {
             fam.Warnf("Failed to evaluation Fact condition: %v\n", err)
         }
         if b {
             for key, value := range pair.FactPair {
-                if val, err := fingerprint.Field(value).Get(resp, req, &env.Cfg); err == nil {
-                    res.AppendUniqueValues(key, []fact.FactValue{fact.FactValue(val)})
-                } else {
-                    res.AppendUniqueValues(key, []fact.FactValue{fact.FactValue(fam.payloadReplace(string(value), pyld))})
-                }
+                res.AppendUniqueValues(key, ds.PrepareAppend(string(value)))
             }
         }
     }
 
     // TODO: print the payloads here
     if len(res.Facts) > 0 {
-        fam.Logf(VPos, "%v\n", pretty.Response(resp, req.URL.String()))
+        fam.Logf(VPos, "%v\n", pretty.Response(ds.Response, ds.Request.URL.String()))
         env.FactCh <- res
-    } else if resp.StatusCode != 404 {
-        fam.Logf(V404, "%v\n", pretty.Response(resp, req.URL.String()))
+    } else if ds.Response.StatusCode != 404 {
+        fam.Logf(V404, "%v\n", pretty.Response(ds.Response, ds.Request.URL.String()))
     } else {
-        fam.Logf(VOther, "%v\n", pretty.Response(resp, res.Url.String()))
+        fam.Logf(VOther, "%v\n", pretty.Response(ds.Response, ds.Request.URL.String()))
     }
 
     // Push Jobs
     for _, pair := range respAct.Jobcond {
-        b, err := pair.Fingerprint.Evaluate(resp, req, &env.Cfg)
+        b, err := pair.Fingerprint.Evaluate(ds.Response, ds.Request, ds.Config)
         if err != nil {
             fam.Warnf("Failed to evaluation Job condition: %v\n", err)
         }
         if b {
             for _, j := range pair.Jobs {
-                env.JobCh <- fam.buildJob(&j, pyld, &res, resp, req, env)
+                env.JobCh <- fam.buildJob(&j, ds)
             }
         }
     }
 }
 
 func (fam *Fam) handlePayload(pyld []action.Payload, base *fact.Target, action *action.Action, env *env.Env) {
-    req := fam.buildRequest(pyld, base, action.Reqt, env)
-    if req == nil {
+    ds := NewData()
+    ds.TakePayloads(pyld)
+    ds.TakeConfig(&env.Cfg)
+    ds.TakeRequest(fam.buildRequest(action.Reqt, ds))
+    if ds.Request == nil {
         return
     }
 
@@ -388,13 +338,13 @@ func (fam *Fam) handlePayload(pyld []action.Payload, base *fact.Target, action *
         // Need to figure out what kinds of conditionals should considered
 
     // TODO: Figure out logic to tell the fuzzer to not Call
-    resp := env.Client.Call(req)
-    if resp == nil {
+    ds.TakeResponse(env.Client.Call(ds.Request))
+    if ds.Response == nil {
         fam.Err("Call Failed!")
         return
     }
 
-    fam.handleResponse(pyld, resp, req, base, action.RespAct, env)
+    fam.handleResponse(action.RespAct, ds, env)
 }
 
 func (fam *Fam) childLoop(b *fact.Target, a *action.Action, e *env.Env) {

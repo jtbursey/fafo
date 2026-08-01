@@ -31,7 +31,19 @@ const (
 )
 
 var (
-    AllFields = []Field{FieldStatusCode, FieldUrl, FieldFuzzRecursive, FieldHdrLocation, FieldHdrAllow, FieldTautology}
+    AllFields = []Field{
+        FieldStatusCode,
+        FieldUrl,
+        FieldFuzzRecursive,
+        FieldHdrLocation,
+        FieldHdrAllow,
+        FieldTautology,
+    }
+
+    // Fields that should be treated as arrays when possible
+    ArrayField = []Field{
+        FieldHdrAllow,
+    }
 )
 
 // Field, Condition Value(s)
@@ -68,7 +80,8 @@ func (f Field) Get(resp *http.Response, req *http.Request, cfg *config.Config) (
             return "", fmt.Errorf("%v was not set in response", f)
         }
     case FieldHdrAllow:
-        return strings.Join(resp.Header["Allow"], ","), nil
+        allow := strings.Split(resp.Header["Allow"][0], ", ")
+        return strings.Join(allow, ","), nil
     case FieldTautology:
         return "true", nil
     default:
