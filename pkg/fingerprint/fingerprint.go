@@ -77,10 +77,14 @@ func (f Field) Get(resp *http.Response, req *http.Request, cfg *config.Config) (
         if resp.Header["Location"] != nil {
             return resp.Header["Location"][0], nil
         } else {
-            return "", fmt.Errorf("%v was not set in response", f)
+            return "", fmt.Errorf("%v (\"Location\") was not set in response header", f)
         }
     case FieldHdrAllow:
-        return resp.Header["Allow"][0], nil
+        if resp.Header["Allow"] != nil {
+            return resp.Header["Allow"][0], nil
+        } else {
+            return "", fmt.Errorf("%v (\"Allow\") was not set in response header", f)
+        }
     case FieldTautology:
         return fmt.Sprintf("%v", true), nil
     default:
