@@ -118,7 +118,8 @@ func (d *Data) SliceField(key string) ([]string, error) {
     var ret []string
     switch key {
     case fingerprint.FieldHdrAllow:
-        ret = strings.Split(field, ", ")
+        field = strings.ReplaceAll(field, " ", "")
+        ret = strings.Split(field, ",")
     default:
         ret = []string{field}
     }
