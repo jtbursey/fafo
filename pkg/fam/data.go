@@ -12,6 +12,7 @@ import (
     "fafo/pkg/action"
     "fafo/pkg/config"
     "fafo/pkg/fingerprint"
+    "fafo/pkg/log"
 )
 
 // Fafo deals with a lot of 'data': port numbers, strings, urls, slices, etc.
@@ -33,6 +34,10 @@ func NewData() *Data {
 // i.e. get the Allow header from a response packet
 func (d *Data) TakeConfig(cfg *config.Config) {
     d.Config = cfg
+}
+
+func (d *Data) TakeBaseUrl(url *url.URL) {
+    d.Base = url
 }
 
 func (d *Data) TakeRequest(req *http.Request) {
@@ -95,11 +100,30 @@ func (d *Data) Replace(origin string) string {
     return origin
 }
 
-func (d *Data) StringField(key fingerprint.Field) (string, error) {
+func (d *Data) StringField(key string) (string, error) {
     if d.Request == nil || d.Response == nil || d.Config == nil {
         return "", fmt.Errorf("Unable to get field")
     }
-    return key.Get(d.Response, d.Request, d.Config)
+    return fingerprint.Field(key).Get(d.Response, d.Request, d.Config)
+}
+
+func (d *Data) SliceField(key string) ([]string, error) {
+    if d.Request == nil || d.Response == nil || d.Config == nil {
+        return nil, fmt.Errorf("Unable to get field")
+    }
+    field, err := fingerprint.Field(key).Get(d.Response, d.Request, d.Config)
+    if err != nil {
+        return nil, err
+    }
+    var ret []string
+    switch key {
+    case fingerprint.FieldHdrAllow:
+        ret = strings.Split(field, ", ")
+    default:
+        ret = []string{field}
+    }
+
+    return ret, nil
 }
 
 func (d *Data) PrepareAppend(key string) []string {
@@ -108,7 +132,11 @@ func (d *Data) PrepareAppend(key string) []string {
     key = d.payloadReplace(key)
 
     if slices.Contains(fingerprint.AllFields, key) {
-        // build the array and return it
+        if arr, err := d.SliceField(key); err != nil {
+            log.Errf("%v\n", err)
+        } else {
+            return arr
+        }
     }
 
     return []string{key}

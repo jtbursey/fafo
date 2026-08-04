@@ -253,7 +253,6 @@ func (fam *Fam) buildJob(baseJob *job.Job, ds *Data) job.Job {
         Priority: baseJob.Priority,
     }
 
-    // Do a Field replace as well
     newJob.Target = ds.Replace(baseJob.Target)
     if newJob.Target == "" {
         fam.Err("Unspecified Target for new job")
@@ -272,7 +271,7 @@ func (fam *Fam) handleResponse(respAct *action.ResponseAction, ds *Data, env *en
 
     res := fact.Target{
         Url:   ds.Response.Request.URL, // Use the final URL
-        Facts: make(map[fact.FactKey][]fact.FactValue),
+        Facts: make(map[fact.FactKey][]string),
     }
 
     if !ds.Config.DisableScreenShot && respAct.ScrShcond != nil {
@@ -326,6 +325,7 @@ func (fam *Fam) handlePayload(pyld []action.Payload, base *fact.Target, action *
     ds := NewData()
     ds.TakePayloads(pyld)
     ds.TakeConfig(&env.Cfg)
+    ds.TakeBaseUrl(base.Url)
     ds.TakeRequest(fam.buildRequest(action.Reqt, ds))
     if ds.Request == nil {
         return

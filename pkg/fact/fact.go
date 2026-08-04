@@ -7,7 +7,6 @@ package fact
 // )
 
 type FactKey string
-type FactValue string
 
 const (
     IsAlive   FactKey = "IsAlive"
@@ -16,9 +15,4 @@ const (
     Redirects FactKey = "Redirects"
     Path      FactKey = "Path"
     Login     FactKey = "Login"
-)
-
-var (
-    True    FactValue = "true"
-    False   FactValue = "false"
 )

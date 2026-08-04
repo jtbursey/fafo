@@ -17,12 +17,12 @@ type Field string
 type ConditionType string
 
 const (
-    FieldStatusCode    Field = "StatusCode"
-    FieldUrl           Field = "Url"
-    FieldFuzzRecursive Field = "FuzzRecursive"
-    FieldHdrLocation   Field = "HdrLocation"
-    FieldHdrAllow      Field = "HdrAllow"
-    FieldTautology     Field = "Tautology"
+    FieldStatusCode    string = "StatusCode"
+    FieldUrl           string = "Url"
+    FieldFuzzRecursive string = "FuzzRecursive"
+    FieldHdrLocation   string = "HdrLocation"
+    FieldHdrAllow      string = "HdrAllow"
+    FieldTautology     string = "Tautology"
 
     Contains           ConditionType = "Contains"
     OneOf              ConditionType = "OneOf"
@@ -31,7 +31,7 @@ const (
 )
 
 var (
-    AllFields = []Field{
+    AllFields = []string{
         FieldStatusCode,
         FieldUrl,
         FieldFuzzRecursive,
@@ -41,14 +41,14 @@ var (
     }
 
     // Fields that should be treated as arrays when possible
-    ArrayField = []Field{
+    ArrayField = []string{
         FieldHdrAllow,
     }
 )
 
 // Field, Condition Value(s)
 type Condition struct {
-    Field     Field                                 `json:"Field"`
+    Field     string                                `json:"Field"`
     Condition ConditionType                         `json:"Condition"`
     Values    []string                              `json:"Values"`
 }
@@ -57,7 +57,7 @@ type Fingerprint []Condition
 
 type FactConditionPair struct {
     Fingerprint Fingerprint                         `json:"Conditions"`
-    FactPair    map[fact.FactKey]fact.FactValue     `json:"Facts"`
+    FactPair    map[fact.FactKey]string             `json:"Facts"`
 }
 
 type JobConditionPair struct {
@@ -66,7 +66,7 @@ type JobConditionPair struct {
 }
 
 func (f Field) Get(resp *http.Response, req *http.Request, cfg *config.Config) (string, error) {
-    switch f {
+    switch string(f) {
     case FieldStatusCode:
         return fmt.Sprintf("%v", resp.StatusCode), nil
     case FieldUrl:
@@ -80,10 +80,9 @@ func (f Field) Get(resp *http.Response, req *http.Request, cfg *config.Config) (
             return "", fmt.Errorf("%v was not set in response", f)
         }
     case FieldHdrAllow:
-        allow := strings.Split(resp.Header["Allow"][0], ", ")
-        return strings.Join(allow, ","), nil
+        return resp.Header["Allow"][0], nil
     case FieldTautology:
-        return "true", nil
+        return fmt.Sprintf("%v", true), nil
     default:
         return "", fmt.Errorf("Tried to Get unimplemented Field %v", f)
     }
@@ -115,7 +114,7 @@ func (c *Condition) doCompare(field string) bool {
 }
 
 func (c *Condition) Evaluate(resp *http.Response, req *http.Request, cfg *config.Config) (bool, error) {
-    field, err := c.Field.Get(resp, req, cfg)
+    field, err := Field(c.Field).Get(resp, req, cfg)
     if err != nil {
         return false, err
     }

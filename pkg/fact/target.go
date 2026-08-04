@@ -17,9 +17,14 @@ const (
     VAlways int = log.V0
 )
 
+var (
+    True  string = fmt.Sprintf("%v", true)
+    False string = fmt.Sprintf("%v", false)
+)
+
 type Target struct {
     Url     *url.URL
-    Facts   map[FactKey][]FactValue           // The information we have learned
+    Facts   map[FactKey][]string           // The information we have learned
 }
 
 type TargetMap struct {
@@ -61,9 +66,9 @@ func (tm *TargetMap) mergeTarget(new Target) {
         switch key {
         case IsAlive:
             if old.Facts[key][0] == True && values[0] == False {
-                old.Facts[HasDied] = []FactValue{True}
+                old.Facts[HasDied] = []string{True}
             } else if values[0] == True {
-                old.Facts[key] = []FactValue{True}
+                old.Facts[key] = []string{True}
             }
         default:
             old.AppendUniqueValues(key, values)
@@ -86,7 +91,7 @@ func (tm *TargetMap) Push(target Target) {
     }
 }
 
-func (tm *TargetMap) PrettyFinding(key FactKey, values []FactValue, space int) string {
+func (tm *TargetMap) PrettyFinding(key FactKey, values []string, space int) string {
     prettyKey := string(key)
     originlen := len(prettyKey)
     switch key {
@@ -116,7 +121,7 @@ func (tm *TargetMap) PrintFindings() {
     }
 }
 
-func (tgt *Target) AppendUniqueValues(key FactKey, values []FactValue) {
+func (tgt *Target) AppendUniqueValues(key FactKey, values []string) {
     for _, v := range values {
         if !slices.Contains(tgt.Facts[key], v) {
             tgt.Facts[key] = append(tgt.Facts[key], v)
@@ -144,6 +149,6 @@ func (tgt *Target) MyUrl() string {
 
 func (tgt *Target) PrintFacts(v int, prefix string) {
     for key, values := range tgt.Facts {
-        log.Logf(v, "%v%*s [%v: %v]\n", prefix, pretty.UrlWidth, tgt.Url.String(), key, values)
+        log.Logf(v, "%v%*s [%v: %v]\n", prefix, pretty.UrlWidth, tgt.Url.String(), key, strings.Join(values, ", "))
     }
 }
