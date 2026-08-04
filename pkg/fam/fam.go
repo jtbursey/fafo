@@ -297,7 +297,7 @@ func (fam *Fam) handleResponse(respAct *action.ResponseAction, ds *Data, env *en
         }
     }
 
-    // TODO: print the payloads here
+    // TODO: print the payloads here, and the Action
     if len(res.Facts) > 0 {
         fam.Logf(VPos, "%v\n", pretty.Response(ds.Response, ds.Request.URL.String()))
         env.FactCh <- res
@@ -319,6 +319,8 @@ func (fam *Fam) handleResponse(respAct *action.ResponseAction, ds *Data, env *en
             }
         }
     }
+
+    // TODO: Allow fam to stop early if attack goal is reached
 }
 
 func (fam *Fam) handlePayload(pyld []action.Payload, base *fact.Target, action *action.Action, env *env.Env) {
