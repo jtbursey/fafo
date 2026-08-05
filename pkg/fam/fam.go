@@ -263,7 +263,8 @@ func (fam *Fam) buildJob(baseJob *job.Job, ds *Data) job.Job {
 
 func (fam *Fam) handleResponse(respAct *action.ResponseAction, ds *Data, env *env.Env) {
     // Until we actually parse the body...
-    _, err := io.ReadAll(ds.Response.Body)
+    bytes, err := io.ReadAll(ds.Response.Body)
+    ds.RespBody = string(bytes)
     ds.Response.Body.Close()
     if err != nil {
         fam.Warnf("Unexpected error in reading response body: %v\n", err)
@@ -275,7 +276,7 @@ func (fam *Fam) handleResponse(respAct *action.ResponseAction, ds *Data, env *en
     }
 
     if !ds.Config.DisableScreenShot && respAct.ScrShcond != nil {
-        b, err := respAct.ScrShcond.Evaluate(ds.Response, ds.Request, ds.Config)
+        b, err := respAct.ScrShcond.Evaluate(ds.Response, ds.Request, ds.RespBody, ds.Config)
         if err != nil {
             fam.Warnf("Failed to evaluation Screenshot condition: %v", err)
         }
@@ -286,7 +287,7 @@ func (fam *Fam) handleResponse(respAct *action.ResponseAction, ds *Data, env *en
 
     // Push Facts
     for _, pair := range respAct.Factcond {
-        b, err := pair.Fingerprint.Evaluate(ds.Response, ds.Request, ds.Config)
+        b, err := pair.Fingerprint.Evaluate(ds.Response, ds.Request, ds.RespBody, ds.Config)
         if err != nil {
             fam.Warnf("Failed to evaluation Fact condition: %v\n", err)
         }
@@ -309,7 +310,7 @@ func (fam *Fam) handleResponse(respAct *action.ResponseAction, ds *Data, env *en
 
     // Push Jobs
     for _, pair := range respAct.Jobcond {
-        b, err := pair.Fingerprint.Evaluate(ds.Response, ds.Request, ds.Config)
+        b, err := pair.Fingerprint.Evaluate(ds.Response, ds.Request, ds.RespBody, ds.Config)
         if err != nil {
             fam.Warnf("Failed to evaluation Job condition: %v\n", err)
         }

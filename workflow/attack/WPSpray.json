@@ -32,7 +32,7 @@
                         "Values": ["200", "302"]
                     },
                     {
-                        "Field": "HdrLocation",
+                        "Field": "Header:Location",
                         "Condition": "Contains",
                         "Values": ["wp-admin"]
                     }

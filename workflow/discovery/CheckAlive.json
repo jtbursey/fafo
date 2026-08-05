@@ -39,7 +39,7 @@
                     }
                 ],
                 "Facts": {
-                    "Redirects": "HdrLocation"
+                    "Redirects": "Header:Location"
                 }
             }
         ]

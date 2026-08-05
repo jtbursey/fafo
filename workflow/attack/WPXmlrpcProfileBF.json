@@ -35,6 +35,11 @@
                         "Field": "StatusCode",
                         "Condition": "OneOf",
                         "Values": ["200"]
+                    },
+                    {
+                        "Field": "Body",
+                        "Condition": "Contains",
+                        "Values": ["user_id"]
                     }
                 ],
                 "Facts": {

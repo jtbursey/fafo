@@ -13,12 +13,12 @@
             {
                 "Conditions": [
                     {
-                        "Field": "HdrAllow",
+                        "Field": "Header:Allow",
                         "Condition": "NonEmpty"
                     }
                 ],
                 "Facts": {
-                    "Options": "HdrAllow"
+                    "Options": "Header:Allow"
                 }
             },
             {
@@ -30,7 +30,7 @@
                     }
                 ],
                 "Facts": {
-                    "Redirects": "HdrLocation"
+                    "Redirects": "Header:Location"
                 }
             }
         ]

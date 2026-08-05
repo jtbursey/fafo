@@ -23,6 +23,7 @@ type Data struct {
     Payloads         []action.Payload
     Request          *http.Request
     Response         *http.Response
+    RespBody         string
     Config           *config.Config
 }
 
@@ -104,14 +105,14 @@ func (d *Data) StringField(key string) (string, error) {
     if d.Request == nil || d.Response == nil || d.Config == nil {
         return "", fmt.Errorf("Unable to get field")
     }
-    return fingerprint.Field(key).Get(d.Response, d.Request, d.Config)
+    return fingerprint.Field(key).Get(d.Response, d.Request, d.RespBody, d.Config)
 }
 
 func (d *Data) SliceField(key string) ([]string, error) {
     if d.Request == nil || d.Response == nil || d.Config == nil {
         return nil, fmt.Errorf("Unable to get field")
     }
-    field, err := fingerprint.Field(key).Get(d.Response, d.Request, d.Config)
+    field, err := fingerprint.Field(key).Get(d.Response, d.Request, d.RespBody, d.Config)
     if err != nil {
         return nil, err
     }

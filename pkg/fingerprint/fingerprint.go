@@ -20,8 +20,9 @@ const (
     FieldStatusCode    string = "StatusCode"
     FieldUrl           string = "Url"
     FieldFuzzRecursive string = "FuzzRecursive"
-    FieldHdrLocation   string = "HdrLocation"
-    FieldHdrAllow      string = "HdrAllow"
+    FieldHdrLocation   string = "Header:Location"
+    FieldHdrAllow      string = "Header:Allow"
+    FieldBody          string = "Body"
     FieldTautology     string = "Tautology"
 
     Contains           ConditionType = "Contains"
@@ -65,7 +66,7 @@ type JobConditionPair struct {
     Jobs        []job.Job                           `json:"Jobs"`
 }
 
-func (f Field) Get(resp *http.Response, req *http.Request, cfg *config.Config) (string, error) {
+func (f Field) Get(resp *http.Response, req *http.Request, body string, cfg *config.Config) (string, error) {
     switch string(f) {
     case FieldStatusCode:
         return fmt.Sprintf("%v", resp.StatusCode), nil
@@ -85,6 +86,8 @@ func (f Field) Get(resp *http.Response, req *http.Request, cfg *config.Config) (
         } else {
             return "", fmt.Errorf("%v (\"Allow\") was not set in response header", f)
         }
+    case FieldBody:
+        return body, nil
     case FieldTautology:
         return fmt.Sprintf("%v", true), nil
     default:
@@ -117,17 +120,17 @@ func (c *Condition) doCompare(field string) bool {
     }
 }
 
-func (c *Condition) Evaluate(resp *http.Response, req *http.Request, cfg *config.Config) (bool, error) {
-    field, err := Field(c.Field).Get(resp, req, cfg)
+func (c *Condition) Evaluate(resp *http.Response, req *http.Request, body string, cfg *config.Config) (bool, error) {
+    field, err := Field(c.Field).Get(resp, req, body, cfg)
     if err != nil {
         return false, err
     }
     return c.doCompare(field), nil
 }
 
-func (f *Fingerprint) Evaluate(resp *http.Response, req *http.Request, cfg *config.Config) (bool, error) {
+func (f *Fingerprint) Evaluate(resp *http.Response, req *http.Request, body string, cfg *config.Config) (bool, error) {
     for _, c := range *f {
-        res, err := c.Evaluate(resp, req, cfg)
+        res, err := c.Evaluate(resp, req, body, cfg)
         if !res {
             return false, err
         }
