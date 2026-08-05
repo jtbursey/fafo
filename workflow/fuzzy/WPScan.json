@@ -103,6 +103,27 @@
                         "Target": "CURRENT"
                     }
                 ]
+            },
+            {
+                "Conditions": [
+                    {
+                        "Field": "StatusCode",
+                        "Condition": "OneOf",
+                        "Values": ["200", "405"]
+                    },
+                    {
+                        "Field": "Url",
+                        "Condition": "Contains",
+                        "Values": ["xmlrpc.php"]
+                    }
+                ],
+                "Jobs": [
+                    {
+                        "Action": "WPXmlrpcProfileBF",
+                        "Priority": 2,
+                        "Target": "CURRENT"
+                    }
+                ]
             }
         ]
     }
