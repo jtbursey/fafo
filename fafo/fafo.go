@@ -145,6 +145,12 @@ func main() {
         return
     }
 
+    // Handle this here for debugging
+    if *flagNoChrm || *flagNoScrSh {
+        *flagNoScrSh = true
+        env.Cfg.DisableScreenShot = true
+    }
+
     env.Debug()
 
     if err := fs.Mkdir(env.Cfg.FindingsDir); err != nil {
@@ -153,12 +159,7 @@ func main() {
     }
 
     var chrm *chrome.Chrome
-    // TODO: put these flags in env so we cn debug them
-    if *flagNoChrm {
-        *flagNoScrSh = true
-    }
-
-    if !*flagNoScrSh && !*flagNoChrm{
+    if !env.Cfg.DisableScreenShot {
         env.Cfg.ScrShDir = filepath.Join(env.Cfg.FindingsDir, "screenshots")
         if err := fs.Mkdir(env.Cfg.ScrShDir); err != nil {
             log.Errf("Failed to mkdir %v: %v", env.Cfg.ScrShDir, err)
@@ -171,9 +172,6 @@ func main() {
             return
         }
         go chrm.Loop(env)
-    } else {
-        log.Log(VAlways, "Screenshots are Disabled\n")
-        env.Cfg.DisableScreenShot = true
     }
 
     // Spawn the Worker Threads

@@ -21,7 +21,3 @@
 - scan various TLS headers
 - Signal repeated errors to quit
 - scan robots.txt/humans.txt
-
-<?xml version="1.0" encoding="utf-8"?><methodCall><methodName>wp.getUsersBlogs</methodName><params><param><value><string>admin</string></value></param><param><value><string>admin</string></value></param></params></methodCall>
-
-<?xml version="1.0" encoding="utf-8"?><methodCall><methodName>wp.getProfile</methodName><params><param><value><int>1</int></value></param><param><value><string>admin</string></value></param><param><value><string>admin</string></value></param><param><value><array><data><value><string>user_id</string></value><value><string>display_name</string></value><value><string>email</string></value></data></array></value></param></params></methodCall>

@@ -143,6 +143,7 @@ func (c *Config) Debug() {
     }
     log.Logf(VDebug, "%v\n", pretty.Config("Workers", c.NumWorkers))
     log.Logf(VDebug, "%v\n", pretty.Config("FuzzRecursive", c.FuzzRecursive))
+    log.Logf(VDebug, "%v\n", pretty.Config("Screenshots", !c.DisableScreenShot))
 
     c.ClientCfg.Debug()
 
