@@ -36,9 +36,10 @@ type RequestTemplate struct {
     // If Y, push a job (mode, action, prio, target)
 type ResponseAction struct {
     // Body handler here
-    ScrShcond fingerprint.Fingerprint         `json:"ScreenShotConditions"`
+    ScrShcond fingerprint.Fingerprint         `json:"ScreenShotCondition"`
     Factcond  []fingerprint.FactConditionPair `json:"FactConditions"`
     Jobcond   []fingerprint.JobConditionPair  `json:"JobConditions"`
+    StopCond  fingerprint.Fingerprint         `json:"StopCondition"`
 }
 
 type Action struct {

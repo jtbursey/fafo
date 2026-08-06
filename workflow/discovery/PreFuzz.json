@@ -9,7 +9,7 @@
         }
     },
     "ResponseAction": {
-        "ScreenShotConditions": [
+        "ScreenShotCondition": [
             {
                 "Field": "StatusCode",
                 "Condition": "OneOf",

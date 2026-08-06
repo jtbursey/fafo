@@ -6,6 +6,7 @@ package fam
 
 import (
 	"bufio"
+    "context"
 	"fmt"
 	"io"
 	"net/http"
@@ -35,13 +36,16 @@ const (
 var (
     // Defaults from ffuf
     aliveValid = []int {200, 204, 301, 302, 307, 401, 405}
+
+    errDone = fmt.Errorf("Channeller recieved stop code")
 )
 
 type Fam struct {
-    Caller     string                // Id of whoever called this (i.e. "Worker 0")
-    plch       chan []action.Payload
-    signal     bool
-    wg         sync.WaitGroup
+    Caller       string                 // Id of whoever called this (i.e. "Worker 0")
+    plch         chan []action.Payload
+    ctx          context.Context        // context for the children and channellers
+    signalDone   context.CancelFunc     // cancel for children and  channellers
+    wg           sync.WaitGroup
 }
 
 func (fam *Fam) prefix() string {
@@ -72,8 +76,19 @@ func (fam *Fam) Warnf(msg string, args ...any) {
 }
 
 func (fam *Fam) Init(env *env.Env) {
-    fam.signal = false
     fam.plch = make(chan []action.Payload, env.Cfg.ClientCfg.MaxCalls*2)
+    ctx, cancel := context.WithCancel(context.Background())
+    fam.ctx = ctx
+    fam.signalDone = cancel
+}
+
+func (fam *Fam) CheckDone() bool {
+    select {
+    case <-fam.ctx.Done():
+        return true
+    default:
+        return false
+    }
 }
 
 func (fam *Fam) countPayloads(pylds []action.PayloadOrigin, e *env.Env) (int, error) {
@@ -113,6 +128,7 @@ func (fam *Fam) channelFile(current action.PayloadOrigin, list []action.PayloadO
     if err != nil {
         return err
     }
+    defer file.Close()
 
     scanner := bufio.NewScanner(file)
     for scanner.Scan() {
@@ -127,8 +143,12 @@ func (fam *Fam) channelFile(current action.PayloadOrigin, list []action.PayloadO
         } else {
             fam.plch <- newPylds
         }
+
+        // Put this in the middle of the for loop because we might be stuck in a big file for a long time
+        if fam.CheckDone() {
+            return errDone
+        }
     }
-    file.Close()
     return nil
 }
 
@@ -144,6 +164,10 @@ func (fam *Fam) channelList(current action.PayloadOrigin, list []action.PayloadO
             }
         } else {
             fam.plch <- newPylds
+        }
+
+        if fam.CheckDone() {
+            return errDone
         }
     }
     return nil
@@ -161,10 +185,18 @@ func (fam *Fam) channelNone(current action.PayloadOrigin, list []action.PayloadO
     } else {
         fam.plch <- newPylds
     }
+
+    if fam.CheckDone() {
+        return errDone
+    }
     return nil
 }
 
 func (fam *Fam) recursiveChannel(list []action.PayloadOrigin, curPylds []action.Payload, env *env.Env) error {
+    if fam.CheckDone() {
+        return errDone
+    }
+    
     if len(list) == 0 && len(curPylds) == 0 {
         return fam.channelNone(action.PayloadOrigin{Id: "", File: "", List: nil}, list, curPylds, env)
     } else if len(list) == 0 {
@@ -194,9 +226,11 @@ func (fam *Fam) channelPayloads(pylds []action.PayloadOrigin, e *env.Env) (int, 
 
     fam.wg.Go(func() {
         if err := fam.recursiveChannel(pylds, make([]action.Payload, 0), e); err != nil {
-            fam.Errf("%v\nFinishing...\n", err)
+            if err != errDone {
+                fam.Errf("%v. Cancelling Channel...\n", err)
+            }
         }
-        fam.signal = true
+        fam.signalDone()
     })
 
     return count, nil
@@ -275,12 +309,12 @@ func (fam *Fam) buildJob(baseJob *job.Job, ds *Data) job.Job {
 }
 
 func (fam *Fam) handleResponse(respAct *action.ResponseAction, ds *Data, env *env.Env) {
-    // Until we actually parse the body...
     bytes, err := io.ReadAll(ds.Response.Body)
-    ds.RespBody = string(bytes)
     ds.Response.Body.Close()
     if err != nil {
         fam.Warnf("Unexpected error in reading response body: %v\n", err)
+    } else {
+        ds.RespBody = string(bytes)
     }
 
     res := fact.Target{
@@ -334,7 +368,13 @@ func (fam *Fam) handleResponse(respAct *action.ResponseAction, ds *Data, env *en
         }
     }
 
-    // TODO: Allow fam to stop early if attack goal is reached
+    // Stop fam early
+    if b, err := respAct.StopCond.Evaluate(ds.Response, ds.Request, ds.RespBody, ds.Config); err != nil {
+        fam.Warnf("Failed to evaluation Stop condition: %v\n", err)
+    } else if b {
+        fam.signalDone()
+        return
+    }
 }
 
 func (fam *Fam) handlePayload(pyld []action.Payload, base *fact.Target, action *action.Action, env *env.Env) {
@@ -368,12 +408,12 @@ func (fam *Fam) childLoop(b *fact.Target, a *action.Action, e *env.Env) {
         select {
         case pyld := <- fam.plch:
             fam.handlePayload(pyld, b, a, e)
-        default:
+        case <-fam.ctx.Done():
             // This stops one hell of a race.
                 // 1. child spawns and sees there is no payload to pull
                 // 2. channeler channels the payload and signals done
                 // 3. child goes to default and checks if done, returns.
-            if fam.signal && len(fam.plch) == 0 {return}
+            if len(fam.plch) == 0 {return}
         }
     }
 }
