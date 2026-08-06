@@ -104,66 +104,21 @@ func (fam *Fam) countPayloads(pylds []action.PayloadOrigin, e *env.Env) (int, er
     return count, nil
 }
 
-func (fam *Fam) recursiveChannel(list []action.PayloadOrigin, curPylds []action.Payload, env *env.Env) error {
-    // TODO: turn this into sub-functions
-
-    if len(list) == 0 && len(curPylds) == 0 {
-        newPylds := append(curPylds, action.Payload{
-            Id:   "",
-            Pl:   "",
-        })
-        fam.plch <- newPylds
-        return nil
-    } else if len(list) == 0 {
-        fam.Warnf("Called recursiveChannel on empty list.\n")
-        return nil
+func (fam *Fam) channelFile(current action.PayloadOrigin, list []action.PayloadOrigin, curPylds []action.Payload, env *env.Env) error {
+    filename, err := env.Cfg.GetAsFilename(current.File)
+    if err != nil {
+        return err
+    }
+    file, err := os.Open(filename)
+    if err != nil {
+        return err
     }
 
-    current := list[0]
-    list = list[1:]
-    if current.File != "" {
-        filename, err := env.Cfg.GetAsFilename(current.File)
-        if err != nil {
-            return err
-        }
-        file, err := os.Open(filename)
-        if err != nil {
-            return err
-        }
-
-        scanner := bufio.NewScanner(file)
-        for scanner.Scan() {
-            newPylds := append(curPylds, action.Payload{
-                Id:   current.Id,
-                Pl:   scanner.Text(),
-            })
-            if len(list) > 0 {
-                if err := fam.recursiveChannel(list, newPylds, env); err != nil {
-                    return err
-                }
-            } else {
-                fam.plch <- newPylds
-            }
-        }
-        file.Close()
-    } else if current.List != nil {
-        for _, pl := range current.List {
-            newPylds := append(curPylds, action.Payload{
-                Id:   current.Id,
-                Pl:   pl,
-            })
-            if len(list) > 0 {
-                if err := fam.recursiveChannel(list, newPylds, env); err != nil {
-                    return err
-                }
-            } else {
-                fam.plch <- newPylds
-            }
-        }
-    } else {
+    scanner := bufio.NewScanner(file)
+    for scanner.Scan() {
         newPylds := append(curPylds, action.Payload{
             Id:   current.Id,
-            Pl:   "",
+            Pl:   scanner.Text(),
         })
         if len(list) > 0 {
             if err := fam.recursiveChannel(list, newPylds, env); err != nil {
@@ -172,6 +127,59 @@ func (fam *Fam) recursiveChannel(list []action.PayloadOrigin, curPylds []action.
         } else {
             fam.plch <- newPylds
         }
+    }
+    file.Close()
+    return nil
+}
+
+func (fam *Fam) channelList(current action.PayloadOrigin, list []action.PayloadOrigin, curPylds []action.Payload, env *env.Env) error {
+    for _, pl := range current.List {
+        newPylds := append(curPylds, action.Payload{
+            Id:   current.Id,
+            Pl:   pl,
+        })
+        if len(list) > 0 {
+            if err := fam.recursiveChannel(list, newPylds, env); err != nil {
+                return err
+            }
+        } else {
+            fam.plch <- newPylds
+        }
+    }
+    return nil
+}
+
+func (fam *Fam) channelNone(current action.PayloadOrigin, list []action.PayloadOrigin, curPylds []action.Payload, env *env.Env) error {
+    newPylds := append(curPylds, action.Payload{
+        Id:   current.Id,
+        Pl:   "",
+    })
+    if len(list) > 0 {
+        if err := fam.recursiveChannel(list, newPylds, env); err != nil {
+            return err
+        }
+    } else {
+        fam.plch <- newPylds
+    }
+    return nil
+}
+
+func (fam *Fam) recursiveChannel(list []action.PayloadOrigin, curPylds []action.Payload, env *env.Env) error {
+    if len(list) == 0 && len(curPylds) == 0 {
+        return fam.channelNone(action.PayloadOrigin{Id: "", File: "", List: nil}, list, curPylds, env)
+    } else if len(list) == 0 {
+        fam.Warnf("Called recursiveChannel on empty list.\n")
+        return nil
+    }
+
+    current := list[0]
+    list = list[1:]
+    if current.File != "" {
+        return fam.channelFile(current, list, curPylds, env)
+    } else if current.List != nil {
+        return fam.channelList(current, list, curPylds, env)
+    } else {
+        return fam.channelNone(current, list, curPylds, env)
     }
 
     return nil
