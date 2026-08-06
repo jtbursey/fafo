@@ -192,7 +192,12 @@ func (fam *Fam) channelPayloads(pylds []action.PayloadOrigin, e *env.Env) (int, 
         return count, err
     }
 
-    fam.wg.Go(func() {fam.recursiveChannel(pylds, make([]action.Payload, 0), e); fam.signal = true})
+    fam.wg.Go(func() {
+        if err := fam.recursiveChannel(pylds, make([]action.Payload, 0), e); err != nil {
+            fam.Errf("%v\nFinishing...\n", err)
+        }
+        fam.signal = true
+    })
 
     return count, nil
 }
