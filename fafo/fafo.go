@@ -3,6 +3,7 @@
 package main
 
 import (
+    "context"
     "flag"
     "fmt"
     "net"
@@ -175,13 +176,15 @@ func main() {
     }
 
     // Spawn the Worker Threads
+    wCtx, wCancel := context.WithCancel(context.Background())
     for i := uint(0); i < env.Cfg.NumWorkers; i++ {
-        go worker.Run(i, env)
+        go worker.Run(wCtx, i, env)
     }
 
     // This kicks everything off
     env.Jobqueue.Push(firstJob)
     Loop(env)
+    wCancel()
     chrm.SignalDone()
     log.Logf(VAlways, "%vAll jobs completed.\n", mgrPrefix())
 

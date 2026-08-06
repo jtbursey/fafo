@@ -3,6 +3,7 @@
 package worker
 
 import (
+    "context"
     "fmt"
     "net/url"
 
@@ -28,6 +29,7 @@ const (
 )
 
 type Worker struct {
+    ctx    context.Context
     id     uint
     status WorkerStatus
     mode   job.WorkerMode
@@ -87,8 +89,23 @@ func (w *Worker) dispatch(job *job.Job, t *fact.Target, env *env.Env) {
     w.resetMode()
 }
 
+func (w *Worker) checkDone() bool {
+    select {
+        case <-w.ctx.Done():
+            return true
+        default:
+            return false
+        }
+}
+
 func (w *Worker) Loop(id uint, env *env.Env) {
     for {
+        // Right now  this is enough.
+        // The only time we call cancel is when Manager exits the loop cleanly, meaning no work is in flight
+        if w.checkDone() {
+            return
+        }
+
         if maybeJob := env.Jobqueue.Pop(); maybeJob != nil {
             curJob := maybeJob.(job.Job)
             w.newStatus(StatusWorking)
@@ -118,8 +135,9 @@ func (w *Worker) Loop(id uint, env *env.Env) {
     }
 }
 
-func Run(i uint, env *env.Env) {
+func Run(ctx context.Context, i uint, env *env.Env) {
     w := &Worker{
+        ctx:    ctx,
         id:     i,
         status: StatusStartup,
     }
