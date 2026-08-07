@@ -38,12 +38,8 @@ var (
         FieldFuzzRecursive,
         FieldHdrLocation,
         FieldHdrAllow,
+        FieldBody,
         FieldTautology,
-    }
-
-    // Fields that should be treated as arrays when possible
-    ArrayField = []string{
-        FieldHdrAllow,
     }
 )
 
@@ -121,9 +117,13 @@ func (c *Condition) doCompare(field string) bool {
 }
 
 func (c *Condition) Evaluate(resp *http.Response, req *http.Request, body string, cfg *config.Config) (bool, error) {
+    // Just have the check here for so I don't have to sort out silly errors
+    if !slices.Contains(AllFields, c.Field) {
+        return false, fmt.Errorf("Tried to Get unimplemented Field %v", c.Field)
+    }
     field, err := Field(c.Field).Get(resp, req, body, cfg)
     if err != nil {
-        return false, err
+        return false, nil
     }
     return c.doCompare(field), nil
 }

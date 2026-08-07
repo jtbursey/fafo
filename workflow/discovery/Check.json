@@ -1,5 +1,5 @@
 {
-    "Id": "CheckAlive",
+    "Id": "Check",
     "Mode": "Discovery",
     "RequestTemplate": {
         "Method": "GET",
@@ -26,8 +26,18 @@
                     }
                 ],
                 "Facts": {
-                    "IsAlive": "true",
                     "Exists": "true"
+                }
+            },
+            {
+                "Conditions": [
+                    {
+                        "Field": "Header:Allow",
+                        "Condition": "NonEmpty"
+                    }
+                ],
+                "Facts": {
+                    "Options": "Header:Allow"
                 }
             },
             {

@@ -323,22 +323,18 @@ func (fam *Fam) handleResponse(respAct *action.ResponseAction, ds *Data, env *en
     }
 
     if !ds.Config.DisableScreenShot && respAct.ScrShcond != nil {
-        b, err := respAct.ScrShcond.Evaluate(ds.Response, ds.Request, ds.RespBody, ds.Config)
-        if err != nil {
-            fam.Warnf("Failed to evaluation Screenshot condition: %v", err)
-        }
-        if b {
+        if b, err := respAct.ScrShcond.Evaluate(ds.Response, ds.Request, ds.RespBody, ds.Config); err != nil {
+            fam.Warnf("Failed to evaluate Screenshot condition: %v", err)
+        } else if b {
             env.ScrShCh <- *ds.Response.Request
         }
     }
 
     // Push Facts
     for _, pair := range respAct.Factcond {
-        b, err := pair.Fingerprint.Evaluate(ds.Response, ds.Request, ds.RespBody, ds.Config)
-        if err != nil {
-            fam.Warnf("Failed to evaluation Fact condition: %v\n", err)
-        }
-        if b {
+        if b, err := pair.Fingerprint.Evaluate(ds.Response, ds.Request, ds.RespBody, ds.Config); err != nil {
+            fam.Warnf("Failed to evaluate Fact condition: %v\n", err)
+        } else if b {
             for key, value := range pair.FactPair {
                 res.AppendUniqueValues(key, ds.PrepareAppend(string(value)))
             }
@@ -357,11 +353,9 @@ func (fam *Fam) handleResponse(respAct *action.ResponseAction, ds *Data, env *en
 
     // Push Jobs
     for _, pair := range respAct.Jobcond {
-        b, err := pair.Fingerprint.Evaluate(ds.Response, ds.Request, ds.RespBody, ds.Config)
-        if err != nil {
-            fam.Warnf("Failed to evaluation Job condition: %v\n", err)
-        }
-        if b {
+        if b, err := pair.Fingerprint.Evaluate(ds.Response, ds.Request, ds.RespBody, ds.Config); err != nil {
+            fam.Warnf("Failed to evaluate Job condition: %v\n", err)
+        } else if b {
             for _, j := range pair.Jobs {
                 env.JobCh <- fam.buildJob(&j, ds)
             }
